@@ -266,7 +266,7 @@ async function main() {
         content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(2,7,14,0.54), rgba(2,7,14,0.78));
+        background: linear-gradient(180deg, rgba(0,7,14,0.7), rgba(0,7,14,0.9));
       }
       .hero-content {
         position: relative;
@@ -274,6 +274,12 @@ async function main() {
         text-align: center;
         max-width: 960px;
         padding: 24px;
+        background: linear-gradient(180deg, rgba(1, 8, 18, 0.84), rgba(2, 12, 23, 0.78));
+        border: 1px solid rgba(168, 217, 255, 0.45);
+        border-radius: 26px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.62);
+        backdrop-filter: blur(10px);
+        isolation: isolate;
       }
       .brandline {
         display: inline-flex;
@@ -309,15 +315,19 @@ async function main() {
         margin-top: 14px;
         font-size: clamp(2rem, 5.4vw, 4.8rem);
         line-height: 0.98;
-        color: #f5fbff;
-        background: rgba(4, 14, 26, 0.5);
-        border: 1px solid rgba(157, 214, 255, 0.25);
+        color: #ffffff;
+        background: linear-gradient(180deg, rgba(1, 8, 16, 0.92), rgba(2, 13, 26, 0.84));
+        border: 1px solid rgba(191, 228, 255, 0.5);
         border-radius: 14px;
-        padding: 8px 16px;
-        -webkit-text-stroke: 0.7px rgba(2, 10, 18, 0.95);
+        padding: 9px 17px;
+        letter-spacing: 0.03em;
+        font-weight: 800;
+        -webkit-text-stroke: 1.2px rgba(0, 0, 0, 0.95);
         text-shadow:
-          0 2px 16px rgba(2, 8, 16, 0.8),
-          0 0 2px rgba(255, 255, 255, 0.5);
+          0 5px 24px rgba(0, 0, 0, 0.98),
+          0 0 10px rgba(53, 196, 255, 0.22),
+          0 0 2px rgba(255, 255, 255, 0.7);
+        mix-blend-mode: normal;
       }
       .hero p {
         margin: 14px auto 0;
