@@ -141,6 +141,16 @@ h1,h2,h3 {
   margin-top: 14px;
   font-size: clamp(1.9rem, 4.6vw, 3.7rem);
   line-height: 0.98;
+  font-family: "Orbitron", "Bebas Neue", sans-serif;
+  letter-spacing: 0.04em;
+  background: linear-gradient(110deg, #f8fcff 0%, color-mix(in srgb, var(--brand-primary) 86%, #7cf5ff 14%) 46%, color-mix(in srgb, var(--brand-accent) 84%, #ffd37a 16%) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow:
+    0 0 24px color-mix(in srgb, var(--brand-primary) 72%, #8ff4ff 28%),
+    0 0 44px color-mix(in srgb, var(--brand-accent) 56%, transparent 44%);
+  animation: splashNeon 3.6s ease-in-out infinite;
 }
 
 .splash p {
@@ -352,11 +362,16 @@ button {
   margin-top: 12px;
   font-size: clamp(2.1rem, 5vw, 4.8rem);
   line-height: 0.95;
-  background: linear-gradient(110deg, #f7fcff 10%, color-mix(in srgb, var(--brand-primary) 74%, #fff 26%) 48%, color-mix(in srgb, var(--brand-accent) 76%, #ffe4c2 24%) 88%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: titlePulse 5.6s ease-in-out infinite;
+  color: #f5fbff;
+  background: rgba(4, 14, 26, 0.5);
+  border: 1px solid rgba(157, 214, 255, 0.25);
+  border-radius: 14px;
+  padding: 8px 16px;
+  -webkit-text-stroke: 0.7px rgba(2, 10, 18, 0.95);
+  text-shadow:
+    0 2px 16px rgba(2, 8, 16, 0.8),
+    0 0 2px rgba(255, 255, 255, 0.5);
+  animation: titlePulse 4.4s ease-in-out infinite;
 }
 
 .hero p { color: #d3e7f9; margin-top: 12px; }
@@ -481,8 +496,17 @@ pre {
 }
 
 @keyframes titlePulse {
-  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
-  50% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--brand-primary) 52%, #ffffff 48%)); }
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+  50% { box-shadow: 0 0 20px color-mix(in srgb, var(--brand-primary) 26%, transparent 74%); }
+}
+
+@keyframes splashNeon {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--brand-primary) 58%, #ffffff 42%));
+  }
 }
 
 @media (max-width: 960px) {

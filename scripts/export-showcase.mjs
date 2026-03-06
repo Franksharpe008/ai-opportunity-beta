@@ -98,7 +98,7 @@ async function main() {
     <title>${esc(summary.company)} | Premium Opportunity Beta</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;700&family=Bebas+Neue&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Sora:wght@400;500;700&family=Bebas+Neue&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
     <style>
       :root {
         --ink: #ecf6ff;
@@ -206,6 +206,16 @@ async function main() {
         margin-top: 14px;
         font-size: clamp(1.95rem, 4.8vw, 3.8rem);
         line-height: 0.98;
+        font-family: "Orbitron", "Bebas Neue", sans-serif;
+        letter-spacing: 0.04em;
+        background: linear-gradient(110deg, #f8fcff 0%, color-mix(in srgb, var(--accent) 86%, #7cf5ff 14%) 46%, color-mix(in srgb, var(--accent-2) 84%, #ffd37a 16%) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow:
+          0 0 24px color-mix(in srgb, var(--accent) 72%, #8ff4ff 28%),
+          0 0 44px color-mix(in srgb, var(--accent-2) 56%, transparent 44%);
+        animation: splashNeon 3.6s ease-in-out infinite;
       }
       .splash p {
         margin: 12px auto 0;
@@ -299,10 +309,15 @@ async function main() {
         margin-top: 14px;
         font-size: clamp(2rem, 5.4vw, 4.8rem);
         line-height: 0.98;
-        background: linear-gradient(110deg, #f7fcff 10%, color-mix(in srgb, var(--accent) 74%, #fff 26%) 48%, color-mix(in srgb, var(--accent-2) 76%, #ffe4c2 24%) 88%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+        color: #f5fbff;
+        background: rgba(4, 14, 26, 0.5);
+        border: 1px solid rgba(157, 214, 255, 0.25);
+        border-radius: 14px;
+        padding: 8px 16px;
+        -webkit-text-stroke: 0.7px rgba(2, 10, 18, 0.95);
+        text-shadow:
+          0 2px 16px rgba(2, 8, 16, 0.8),
+          0 0 2px rgba(255, 255, 255, 0.5);
       }
       .hero p {
         margin: 14px auto 0;
@@ -425,6 +440,10 @@ async function main() {
         0%, 100% { height: 12px; opacity: 0.72; }
         30% { height: 48px; opacity: 1; }
         65% { height: 24px; opacity: 0.86; }
+      }
+      @keyframes splashNeon {
+        0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
+        50% { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 58%, #ffffff 42%)); }
       }
       @media (max-width: 860px) {
         .slide { min-height: 80vh; }
