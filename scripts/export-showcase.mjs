@@ -65,11 +65,10 @@ async function main() {
   const imageFile = await copyAsset(summary.image?.url);
   const jingleFile = await copyAsset(summary.jingle?.url);
   const narrationFile = await copyAsset(summary.narration?.url);
-  const logoFile = await copyAsset(summary.branding?.logoUrl);
   const brandPrimary = summary.branding?.primary || "#35f1c3";
   const brandSecondary = summary.branding?.secondary || "#16324a";
   const brandAccent = summary.branding?.accent || "#ffb44c";
-  const brandTagline = summary.branding?.tagline || "Brand-ready visual system";
+  const brandTagline = summary.branding?.tagline || "Brand color system aligned to company tone";
 
   const reportFileName = asFileName(summary.report?.reportUrl || "");
   const reportText = reportFileName ? await fs.readFile(path.join(GENERATED_DIR, reportFileName), "utf8") : "";
@@ -279,17 +278,19 @@ async function main() {
         border-radius: 26px;
         box-shadow: 0 32px 84px rgba(0, 0, 0, 0.68);
         isolation: isolate;
+        color-scheme: dark;
+        forced-color-adjust: none;
       }
       .brandline {
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
-        padding: 7px 13px;
-        border-radius: 999px;
-        background: #0c2138;
-        border: 1px solid rgba(162, 218, 255, 0.34);
-        color: #e7f5ff;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        color: #b8dbf8;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        forced-color-adjust: none;
       }
       .company-logo {
         width: 24px;
@@ -308,7 +309,8 @@ async function main() {
         text-transform: uppercase;
         color: #e3f4ff;
         border: 1px solid rgba(154, 219, 255, 0.44);
-        background: #0b1f34;
+        background: transparent;
+        forced-color-adjust: none;
       }
       h1,h2,h3 { font-family: "Bebas Neue", "Fraunces", serif; margin: 0; letter-spacing: 0.02em; }
       .hero h1 {
@@ -316,22 +318,23 @@ async function main() {
         font-size: clamp(2rem, 5.4vw, 4.8rem);
         line-height: 0.98;
         color: #ffffff;
-        background: #0a2139;
-        border: 1px solid rgba(191, 228, 255, 0.48);
-        border-radius: 14px;
-        padding: 10px 18px;
+        background: none;
+        border: none;
+        padding: 0;
         letter-spacing: 0.03em;
         font-weight: 800;
-        -webkit-text-stroke: 0.9px rgba(0, 0, 0, 0.98);
+        -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.98);
         text-shadow:
-          0 3px 14px rgba(0, 0, 0, 0.92),
-          0 0 2px rgba(255, 255, 255, 0.55);
+          0 4px 20px rgba(0, 0, 0, 0.92),
+          0 0 2px rgba(255, 255, 255, 0.5);
         mix-blend-mode: normal;
+        forced-color-adjust: none;
       }
       .hero p {
         margin: 14px auto 0;
         color: #dbeeff;
         max-width: 720px;
+        forced-color-adjust: none;
       }
       .launch {
         margin-top: 22px;
@@ -344,6 +347,7 @@ async function main() {
         background: linear-gradient(125deg, #33e2c2, #63c4ff);
         color: #032227;
         border: 1px solid rgba(220, 245, 255, 0.35);
+        forced-color-adjust: none;
       }
       .deck {
         position: relative;
@@ -486,7 +490,6 @@ async function main() {
       <img src="./${esc(imageFile)}" alt="Presentation hero" />
       <div class="hero-content">
         <div class="brandline">
-          ${logoFile ? `<img class="company-logo" src="./${esc(logoFile)}" alt="${esc(summary.company)} logo" />` : ""}
           <span>${esc(brandTagline)}</span>
         </div>
         <span class="eyebrow">Automated Opportunity Story</span>

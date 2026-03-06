@@ -15,7 +15,6 @@ const els = {
   splashTitle: $("splashTitle"),
   splashSub: $("splashSub"),
   splashGoBtn: $("splashGoBtn"),
-  companyLogo: $("companyLogo"),
   brandTag: $("brandTag"),
   scrollProgress: $("scrollProgress"),
   status: $("status"),
@@ -122,14 +121,7 @@ function applyBranding(summary) {
     root.style.setProperty("--brand-accent", branding.accent);
   }
 
-  if (branding.logoUrl) {
-    els.companyLogo.src = branding.logoUrl;
-    els.companyLogo.hidden = false;
-  } else {
-    els.companyLogo.hidden = true;
-  }
-
-  els.brandTag.textContent = branding.tagline || "Brand-ready visual system";
+  els.brandTag.textContent = branding.tagline || "Brand color system aligned to company tone";
 }
 
 function fillPresentation(summary) {
