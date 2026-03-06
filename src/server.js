@@ -31,6 +31,10 @@ const SUPERTONIC_VOICE = process.env.SUPERTONIC_VOICE || "M2";
 const SUPERTONIC_LANG = process.env.SUPERTONIC_LANG || "en";
 const SUPERTONIC_STEPS = String(process.env.SUPERTONIC_STEPS || 10);
 const SUPERTONIC_SPEED = String(process.env.SUPERTONIC_SPEED || 1.0);
+const TTS_ENGINE = String(process.env.TTS_ENGINE || (process.platform === "darwin" ? "macos_say" : "supertonic")).toLowerCase();
+const MACOS_TTS_VOICE = process.env.MACOS_TTS_VOICE || "Ava";
+const MACOS_TTS_RATE = String(process.env.MACOS_TTS_RATE || 190);
+const JINGLE_CLIP_SECONDS = Number(process.env.JINGLE_CLIP_SECONDS || 28);
 
 const SEND_EMAIL_SCRIPT = process.env.SEND_EMAIL_SCRIPT || "/Users/franksharpe/clawd/scripts/send-email-now";
 const MAIL_HUB_SCRIPT = process.env.MAIL_HUB_SCRIPT || "/Users/franksharpe/clawd/scripts/mail-hub";
@@ -141,34 +145,11 @@ async function checkBrevo() {
 
 async function checkTts() {
   try {
-    const verifyOut = path.join(GENERATED_DIR, `verify-tts-${Date.now()}.wav`);
-    await runCmd(
-      SUPERTONIC_BIN,
-      [
-        "tts",
-        "Tool check complete. The voice stack is live.",
-        "-o",
-        verifyOut,
-        "--model",
-        SUPERTONIC_MODEL,
-        "--lang",
-        SUPERTONIC_LANG,
-        "--voice",
-        SUPERTONIC_VOICE,
-        "--steps",
-        SUPERTONIC_STEPS,
-        "--speed",
-        SUPERTONIC_SPEED
-      ],
-      120000
-    );
-
+    const identity = getVoiceIdentity();
+    const verifyOut = path.join(GENERATED_DIR, `verify-tts-${Date.now()}-sample.wav`);
+    await synthesizeSpeech("Tool check complete. The voice stack is live.", verifyOut);
     await fs.access(verifyOut);
-    return {
-      ok: true,
-      detail: `${SUPERTONIC_MODEL}/${SUPERTONIC_VOICE}`,
-      sample: `/generated/${path.basename(verifyOut)}`
-    };
+    return { ok: true, detail: `${identity.engine}/${identity.voice}`, sample: `/generated/${path.basename(verifyOut)}` };
   } catch (error) {
     return { ok: false, detail: error.message };
   }
@@ -193,15 +174,55 @@ async function checkVercel() {
   }
 }
 
-async function makeNarration(text, runId) {
-  const outWav = path.join(GENERATED_DIR, `${runId}-narration.wav`);
+function getVoiceIdentity() {
+  if (TTS_ENGINE === "macos_say") {
+    return {
+      engine: "macos_say",
+      model: "system-neural",
+      voice: MACOS_TTS_VOICE,
+      lang: "en-US"
+    };
+  }
+
+  return {
+    engine: "supertonic",
+    model: SUPERTONIC_MODEL,
+    voice: SUPERTONIC_VOICE,
+    lang: SUPERTONIC_LANG
+  };
+}
+
+async function synthesizeSpeech(text, outWavPath) {
+  if (TTS_ENGINE === "macos_say") {
+    const outAiff = `${outWavPath}.aiff`;
+    await runCmd("say", ["-v", MACOS_TTS_VOICE, "-r", MACOS_TTS_RATE, "-o", outAiff, text], 120000);
+    await runCmd(
+      "ffmpeg",
+      [
+        "-y",
+        "-i",
+        outAiff,
+        "-ac",
+        "1",
+        "-ar",
+        "44100",
+        "-af",
+        "highpass=f=70,lowpass=f=12000,acompressor=threshold=-17dB:ratio=2.2:attack=20:release=280",
+        outWavPath
+      ],
+      120000
+    );
+    await fs.rm(outAiff, { force: true });
+    return;
+  }
+
   await runCmd(
     SUPERTONIC_BIN,
     [
       "tts",
       text,
       "-o",
-      outWav,
+      outWavPath,
       "--model",
       SUPERTONIC_MODEL,
       "--lang",
@@ -215,11 +236,12 @@ async function makeNarration(text, runId) {
     ],
     180000
   );
+}
 
-  return {
-    path: outWav,
-    url: `/generated/${path.basename(outWav)}`
-  };
+async function makeNarration(text, runId) {
+  const outWav = path.join(GENERATED_DIR, `${runId}-narration.wav`);
+  await synthesizeSpeech(text, outWav);
+  return { path: outWav, url: `/generated/${path.basename(outWav)}` };
 }
 
 async function generateStableHordeImage(prompt, runId) {
@@ -330,7 +352,7 @@ async function generateSonautoJingle(runId, prompt) {
 
   const createPayload = {
     prompt,
-    instrumental: true,
+    instrumental: false,
     num_songs: 1,
     output_format: "mp3"
   };
@@ -386,9 +408,23 @@ async function generateSonautoJingle(runId, prompt) {
       await fs.writeFile(fullPath, Buffer.from(await sourceRes.arrayBuffer()));
 
       const clipPath = path.join(GENERATED_DIR, `${runId}-jingle-clip.mp3`);
+      const fadeOutStart = Math.max(0, JINGLE_CLIP_SECONDS - 3);
       await runCmd(
         "ffmpeg",
-        ["-y", "-i", fullPath, "-t", "6", "-acodec", "libmp3lame", "-q:a", "4", clipPath],
+        [
+          "-y",
+          "-i",
+          fullPath,
+          "-t",
+          String(JINGLE_CLIP_SECONDS),
+          "-acodec",
+          "libmp3lame",
+          "-q:a",
+          "2",
+          "-af",
+          `afade=t=in:st=0:d=0.8,afade=t=out:st=${fadeOutStart}:d=2.6`,
+          clipPath
+        ],
         90000
       );
 
@@ -404,7 +440,8 @@ async function generateSonautoJingle(runId, prompt) {
         url: `/generated/${path.basename(clipPath)}`,
         provider: "sonauto",
         taskId,
-        fullTrack: `/generated/${path.basename(fullPath)}`
+        fullTrack: `/generated/${path.basename(fullPath)}`,
+        clipSeconds: JINGLE_CLIP_SECONDS
       };
     }
 
@@ -429,20 +466,50 @@ function buildNarrationText(company, yearsExperience, motivation) {
   ].join(" ");
 }
 
+function getCompanyProfile(company) {
+  const profile = COMPANY_PROFILES[company.toLowerCase()];
+  if (profile) {
+    return profile;
+  }
+
+  return {
+    name: company,
+    facts: [
+      `${company} is positioned for stronger growth through operational automation.`,
+      "A faster media-to-deployment cycle can improve campaign velocity.",
+      "Process reliability can improve stakeholder confidence and output quality."
+    ],
+    alignment: [
+      "Automated asset generation compresses execution time.",
+      "A proof-first delivery flow supports business-critical operations.",
+      "The system can be reused across hiring, sales, and marketing initiatives."
+    ],
+    source: "User-provided target company"
+  };
+}
+
+function buildPresentationScript(company, yearsExperience, motivation) {
+  const profile = getCompanyProfile(company);
+  return [
+    `Welcome to the ${profile.name} opportunity presentation.`,
+    `I am Frank Sharpe, and I bring ${yearsExperience} of builder execution across automation and delivery.`,
+    profile.facts[0],
+    "This presentation was generated through a live automation stack in real time.",
+    "The pipeline includes company research, image generation, vocal jingle production, and premium storytelling flow.",
+    "It then deploys to Vercel and sends direct delivery by Brevo for immediate stakeholder review.",
+    motivation
+  ];
+}
+
 function buildOpportunityReport({ company, yearsExperience, motivation }) {
   const now = new Date();
   const date = now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const profile = COMPANY_PROFILES[company.toLowerCase()];
-  const companyTitle = profile?.name || company;
-  const companyFacts = profile?.facts || [
-    `${company} has clear opportunity for faster media-to-deployment workflows.`,
-    "Automation can reduce manual work and compress delivery cycles."
-  ];
-  const companyAlignment = profile?.alignment || [
-    "Your team can benefit from faster cross-channel asset delivery.",
-    "A repeatable stack improves quality and lowers execution risk."
-  ];
-  const source = profile?.source || "Internal research + user-provided context";
+  const companyData = profile || getCompanyProfile(company);
+  const companyTitle = companyData.name || company;
+  const companyFacts = companyData.facts;
+  const companyAlignment = companyData.alignment;
+  const source = companyData.source || "Internal research + user-provided context";
 
   const lines = [
     `# ${companyTitle} Opportunity Presentation (Beta)` ,
@@ -490,17 +557,13 @@ function requireString(value, field) {
 }
 
 app.get("/api/health", (_req, res) => {
+  const voiceIdentity = getVoiceIdentity();
   res.json({
     ok: true,
     appUrl: APP_URL,
     defaultCompany: DEFAULT_COMPANY,
     defaultRecipient: DEFAULT_RECIPIENT,
-    tts: {
-      engine: "supertonic",
-      model: SUPERTONIC_MODEL,
-      voice: SUPERTONIC_VOICE,
-      lang: SUPERTONIC_LANG
-    }
+    tts: voiceIdentity
   });
 });
 
@@ -565,7 +628,7 @@ app.post("/api/jingle", async (req, res) => {
     const company = String(req.body.company || DEFAULT_COMPANY).trim() || DEFAULT_COMPANY;
     const runId = `${Date.now()}-${safeName(company)}-${crypto.randomUUID().slice(0, 8)}`;
     const prompt = String(
-      req.body.prompt || "short upbeat fintech jingle intro, corporate startup confidence, energetic clean synth"
+      req.body.prompt || "high-energy fintech anthem with a catchy vocal hook, premium pop/electronic production, bold and inspiring"
     ).trim();
 
     let jingle;
@@ -595,12 +658,7 @@ app.post("/api/tts", async (req, res) => {
 
     res.json({
       ok: true,
-      voice: {
-        engine: "supertonic",
-        model: SUPERTONIC_MODEL,
-        voice: SUPERTONIC_VOICE,
-        lang: SUPERTONIC_LANG
-      },
+      voice: getVoiceIdentity(),
       text: narrationText,
       narration
     });
@@ -641,6 +699,8 @@ app.post("/api/pipeline", async (req, res) => {
     const company = String(req.body.company || DEFAULT_COMPANY).trim() || DEFAULT_COMPANY;
     const yearsExperience = String(req.body.yearsExperience || "10+").trim() || "10+";
     const motivation = String(req.body.motivation || "Let's build something that creates real momentum and measurable growth.").trim();
+    const companyProfile = getCompanyProfile(company);
+    const script = buildPresentationScript(company, yearsExperience, motivation);
 
     const report = buildOpportunityReport({ company, yearsExperience, motivation });
     const runBase = `${Date.now()}-${safeName(company)}-${crypto.randomUUID().slice(0, 8)}`;
@@ -655,7 +715,10 @@ app.post("/api/pipeline", async (req, res) => {
 
     let jingle;
     try {
-      jingle = await generateSonautoJingle(runBase, "short upbeat fintech jingle intro, confident modern synth, no lyrics");
+      jingle = await generateSonautoJingle(
+        runBase,
+        "anthemic fintech launch song with lead vocal singing, inspirational lyrics, modern pop/electronic production, premium brand energy"
+      );
     } catch (error) {
       jingle = await generateFallbackJingle(runBase);
       jingle.error = `Sonauto failed, fallback used: ${error.message}`;
@@ -668,6 +731,8 @@ app.post("/api/pipeline", async (req, res) => {
       company,
       yearsExperience,
       motivation,
+      companyProfile,
+      script,
       report: {
         report,
         reportUrl: `/generated/${reportFile}`
@@ -675,12 +740,7 @@ app.post("/api/pipeline", async (req, res) => {
       image,
       jingle,
       narration,
-      voice: {
-        engine: "supertonic",
-        model: SUPERTONIC_MODEL,
-        voice: SUPERTONIC_VOICE,
-        lang: SUPERTONIC_LANG
-      },
+      voice: getVoiceIdentity(),
       generatedAt: nowIso()
     };
 

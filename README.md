@@ -3,8 +3,8 @@
 Interactive local beta for a hiring-company presentation pipeline:
 
 1. Verify tools (Stable Horde, Sonauto, Brevo, TTS, GitHub, Vercel)
-2. Generate report, hero image, jingle, and narration
-3. Run splash + auto-scroll presentation
+2. Generate report, hero image, vocal jingle (20-30s), and human-style narration
+3. Run cinematic splash + timed captions + auto-scroll presentation
 4. Send delivery email through Brevo
 
 ## Quick start
@@ -29,6 +29,7 @@ Brevo send uses your existing script path (`SEND_EMAIL_SCRIPT`) and OpenClaw-bac
 
 ## Notes
 
-- Narration engine uses local Supertonic voice stack.
-- Sonauto jingle has automatic local tone fallback if generation fails.
+- Narration defaults to `macos_say` voice (`Ava`) for more natural human tone; Supertonic remains supported.
+- Sonauto jingle is configured for vocal output and clipped to ~28 seconds by default.
+- Sonauto failure still falls back to local tone generation.
 - Assets are saved under `data/generated/` and exposed at `/generated/*`.

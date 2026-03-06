@@ -7,26 +7,29 @@ const els = {
   recipient: $("recipient"),
   verifyBtn: $("verifyBtn"),
   pipelineBtn: $("pipelineBtn"),
-  startBtn: $("startBtn"),
   ttsBtn: $("ttsBtn"),
   emailBtn: $("emailBtn"),
+  startBtn: $("startBtn"),
   status: $("status"),
   checks: $("checks"),
-  hero: $("hero"),
-  splashTitle: $("splashTitle"),
+  heroImage: $("heroImage"),
+  heroTitle: $("heroTitle"),
+  heroSub: $("heroSub"),
   whyHire: $("whyHire"),
-  stackList: $("stackList"),
-  alignment: $("alignment"),
+  companyFacts: $("companyFacts"),
+  companyAlignment: $("companyAlignment"),
+  stackGrid: $("stackGrid"),
   report: $("report"),
   jingle: $("jingle"),
   narration: $("narration"),
-  story: $("story")
+  captionLine: $("captionLine")
 };
 
 const state = {
   summary: null,
-  voice: null,
-  autoScrollTimer: null
+  scriptLines: [],
+  autoTimer: null,
+  captionTimer: null
 };
 
 function setStatus(message, isError = false) {
@@ -51,75 +54,93 @@ async function api(path, payload = {}) {
 function currentInput() {
   return {
     company: els.company.value.trim() || "Easy Pay Direct",
-    yearsExperience: els.yearsExperience.value.trim() || "10+",
-    motivation: els.motivation.value.trim() || "Let's build something beautiful, reliable, and revenue-driving together.",
+    yearsExperience: els.yearsExperience.value.trim() || "10+ years",
+    motivation: els.motivation.value.trim() || "Let's build a beautiful and brilliant partnership through reliable automation.",
     recipient: els.recipient.value.trim()
   };
 }
 
-function fillStory(summary) {
-  const { company, yearsExperience, motivation, report, voice } = summary;
-
-  els.splashTitle.textContent = company;
-  els.whyHire.textContent = `I have been building and shipping automation systems for ${yearsExperience}. This beta proves I can take an opportunity from concept to delivered assets and live deployment quickly.`;
-  els.alignment.textContent = `${company} needs speed, trust, and operational precision. My workflow aligns by combining production-ready automation, rapid creative generation, and direct delivery with verification at each step. ${motivation}`;
-  els.report.textContent = report.report;
-
-  const stack = [
-    "Opportunity analysis and narrative generation",
-    "Stable Horde hero image generation",
-    "Sonauto jingle generation (local fallback enabled)",
-    `Maximilian narration voice (${voice.engine}/${voice.model}/${voice.voice})`,
-    "Interactive presentation rendering with auto-scroll",
-    "Brevo email delivery",
-    "GitHub + Vercel deployment"
-  ];
-
-  els.stackList.innerHTML = "";
-  stack.forEach((item) => {
+function setList(el, items) {
+  el.innerHTML = "";
+  (items || []).forEach((item) => {
     const li = document.createElement("li");
     li.textContent = item;
-    els.stackList.appendChild(li);
+    el.appendChild(li);
   });
 }
 
-function setMedia(summary) {
-  if (summary?.image?.url) {
-    els.hero.src = summary.image.url;
-  }
+function setStack(summary) {
+  const steps = [
+    "Company analysis and strategic narrative framing",
+    "Stable Horde visual generation",
+    `Sonauto vocal jingle generation (~${summary?.jingle?.clipSeconds || 28}s)`,
+    `Human-style narration voice (${summary?.voice?.engine || "tts"}/${summary?.voice?.voice || "voice"})`,
+    "Animated splash and timed auto-scroll storytelling",
+    "GitHub version control and Vercel deployment",
+    "Brevo API delivery for stakeholders"
+  ];
 
-  if (summary?.jingle?.url) {
-    els.jingle.src = summary.jingle.url;
-  }
+  els.stackGrid.innerHTML = "";
+  steps.forEach((item) => {
+    const div = document.createElement("div");
+    div.textContent = item;
+    els.stackGrid.appendChild(div);
+  });
+}
 
-  if (summary?.narration?.url) {
-    els.narration.src = summary.narration.url;
-  }
+function fillPresentation(summary) {
+  els.heroTitle.textContent = `${summary.company} x Frank Sharpe`;
+  els.heroSub.textContent = "Premium real-time automation presentation with vocal jingle, human narration, and executable delivery.";
+  els.whyHire.textContent = `I have ${summary.yearsExperience} of builder execution focused on reliable outcomes. This demo proves I can ship from concept to polished delivery quickly and consistently.`;
+  setList(els.companyFacts, summary.companyProfile?.facts || []);
+  setList(els.companyAlignment, summary.companyProfile?.alignment || []);
+  setStack(summary);
+  els.report.textContent = summary.report?.report || "";
+
+  if (summary.image?.url) els.heroImage.src = summary.image.url;
+  if (summary.jingle?.url) els.jingle.src = summary.jingle.url;
+  if (summary.narration?.url) els.narration.src = summary.narration.url;
+
+  state.scriptLines = summary.script || [summary.motivation];
 }
 
 function stopAutoScroll() {
-  if (state.autoScrollTimer) {
-    clearInterval(state.autoScrollTimer);
-    state.autoScrollTimer = null;
+  if (state.autoTimer) {
+    clearInterval(state.autoTimer);
+    state.autoTimer = null;
   }
 }
 
 function startAutoScroll() {
   stopAutoScroll();
-  const target = els.story;
-  target.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
-  state.autoScrollTimer = setInterval(() => {
-    target.scrollTop += 1.2;
-    const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 3;
-    if (atBottom) {
-      stopAutoScroll();
+  state.autoTimer = setInterval(() => {
+    window.scrollBy(0, 1.45);
+    const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 3;
+    if (atBottom) stopAutoScroll();
+  }, 20);
+}
+
+function startCaptions() {
+  if (state.captionTimer) clearInterval(state.captionTimer);
+
+  let idx = 0;
+  els.captionLine.textContent = state.scriptLines[idx] || "";
+
+  state.captionTimer = setInterval(() => {
+    idx += 1;
+    if (idx >= state.scriptLines.length) {
+      clearInterval(state.captionTimer);
+      state.captionTimer = null;
+      return;
     }
-  }, 24);
+    els.captionLine.textContent = state.scriptLines[idx];
+  }, 4300);
 }
 
 async function verify() {
-  setStatus("Verifying toolchain...");
+  setStatus("Verifying stack...");
   els.checks.textContent = "";
   const result = await api("/api/verify");
   els.checks.textContent = JSON.stringify(result.checks, null, 2);
@@ -128,97 +149,86 @@ async function verify() {
 
 async function runPipeline() {
   const input = currentInput();
-  setStatus("Running full beta pipeline. This can take up to a few minutes...");
+  setStatus("Running full pipeline (image + vocal jingle + narration)...");
   const result = await api("/api/pipeline", input);
   state.summary = result.summary;
-  state.voice = result.summary.voice;
+  fillPresentation(result.summary);
 
-  fillStory(result.summary);
-  setMedia(result.summary);
-
-  const maybeFallback = result.summary?.jingle?.error ? ` (${result.summary.jingle.error})` : "";
-  setStatus(`Pipeline complete. Voice=${result.summary.voice.voice}${maybeFallback}`);
+  const fallbackNote = result.summary?.jingle?.error ? ` | ${result.summary.jingle.error}` : "";
+  setStatus(`Pipeline complete. Voice=${result.summary.voice.voice}, Jingle=${result.summary.jingle.provider}${fallbackNote}`);
 }
 
 async function regenerateNarration() {
   const input = currentInput();
-  setStatus("Generating narration...");
+  setStatus("Generating human-style narration...");
   const result = await api("/api/tts", input);
+
   if (!state.summary) {
     state.summary = {
       company: input.company,
       yearsExperience: input.yearsExperience,
       motivation: input.motivation,
-      report: { report: "Run full pipeline to generate full report." },
+      companyProfile: { facts: [], alignment: [] },
+      report: { report: "Run pipeline to generate full report." },
       image: {},
       jingle: {},
-      narration: {},
-      voice: result.voice
+      narration: result.narration,
+      voice: result.voice,
+      script: [result.text]
     };
   }
 
   state.summary.narration = result.narration;
   state.summary.voice = result.voice;
-  els.narration.src = result.narration.url;
+  state.summary.script = [result.text, "Narration regenerated in real time."];
+  fillPresentation(state.summary);
 
-  fillStory(state.summary);
-  setStatus(`Narration ready with ${result.voice.model}/${result.voice.voice}.`);
+  setStatus(`Narration ready with ${result.voice.engine}/${result.voice.voice}.`);
 }
 
 async function sendEmail() {
   const input = currentInput();
-  if (!input.recipient) {
-    throw new Error("Recipient email is required.");
-  }
+  if (!input.recipient) throw new Error("Recipient email is required.");
 
   const summary = state.summary;
   const appLink = window.location.origin;
-  const imageLink = summary?.image?.url ? `${window.location.origin}${summary.image.url}` : "pending";
-  const narrationLink = summary?.narration?.url ? `${window.location.origin}${summary.narration.url}` : "pending";
   const reportLink = summary?.report?.reportUrl ? `${window.location.origin}${summary.report.reportUrl}` : "pending";
+  const imageLink = summary?.image?.url ? `${window.location.origin}${summary.image.url}` : "pending";
+  const jingleLink = summary?.jingle?.url ? `${window.location.origin}${summary.jingle.url}` : "pending";
+  const narrationLink = summary?.narration?.url ? `${window.location.origin}${summary.narration.url}` : "pending";
 
-  const subject = `${input.company} x Frank Sharpe | Opportunity Automation Beta`;
-  const body = [
+  const subject = `${input.company} x Frank Sharpe | Premium Opportunity Presentation`;
+  const text = [
     `Hi ${input.company} team,`,
     "",
-    "I built a live automation beta that demonstrates how I can turn opportunity analysis into deployable presentation assets quickly.",
+    "I created a premium automated opportunity presentation tailored for your company.",
     "",
-    `Live beta: ${appLink}`,
+    `Live presentation: ${appLink}`,
     `Report: ${reportLink}`,
     `Hero image: ${imageLink}`,
+    `Vocal jingle: ${jingleLink}`,
     `Narration: ${narrationLink}`,
     "",
-    "Core stack:",
-    "- Stable Horde (image generation)",
-    "- Sonauto (jingle) with fallback",
-    "- Local Maximilian voice narration",
-    "- Brevo API for direct delivery",
-    "- GitHub + Vercel deployment",
-    "",
-    `Motivation: ${input.motivation}`,
+    "This stack demonstrates rapid execution, quality control, and direct stakeholder delivery.",
     "",
     "Best,",
     "Frank Sharpe"
   ].join("\n");
 
   setStatus("Sending Brevo email...");
-  const result = await api("/api/email", {
-    to: input.recipient,
-    subject,
-    text: body
-  });
-
+  const result = await api("/api/email", { to: input.recipient, subject, text });
   setStatus(`Email sent. Message ID: ${result.result.MESSAGE_ID || "unknown"}`);
 }
 
 async function startPresentation() {
-  if (!els.jingle.src && !els.narration.src) {
-    setStatus("Generate assets first (Run Beta Pipeline).", true);
+  if (!state.summary) {
+    setStatus("Run the pipeline first.", true);
     return;
   }
 
-  setStatus("Presentation started: jingle + narration + auto-scroll.");
   startAutoScroll();
+  startCaptions();
+  setStatus("Presentation started: jingle, narration, and auto-scroll active.");
 
   try {
     if (els.jingle.src) {
@@ -235,19 +245,28 @@ async function startPresentation() {
       await els.narration.play();
     }
   } catch {
-    setStatus("Autoplay blocked by browser. Press play on audio controls.", true);
+    setStatus("Autoplay blocked. Use audio controls manually.", true);
   }
+}
+
+function setupRevealObserver() {
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) entry.target.classList.add("reveal");
+    });
+  }, { threshold: 0.2 });
+
+  slides.forEach((slide) => observer.observe(slide));
 }
 
 async function loadHealth() {
   const response = await fetch("/api/health");
   const body = await response.json();
-  els.company.value = body.defaultCompany || els.company.value;
-  if (body.defaultRecipient) {
-    els.recipient.value = body.defaultRecipient;
-  }
-  state.voice = body.tts;
-  setStatus(`Ready. Voice: ${body.tts.model}/${body.tts.voice}`);
+  if (body.defaultCompany) els.company.value = body.defaultCompany;
+  if (body.defaultRecipient) els.recipient.value = body.defaultRecipient;
+
+  setStatus(`Ready. Voice=${body.tts.engine}/${body.tts.voice}`);
 }
 
 els.verifyBtn.addEventListener("click", () => verify().catch((error) => setStatus(error.message, true)));
@@ -256,4 +275,5 @@ els.ttsBtn.addEventListener("click", () => regenerateNarration().catch((error) =
 els.emailBtn.addEventListener("click", () => sendEmail().catch((error) => setStatus(error.message, true)));
 els.startBtn.addEventListener("click", () => startPresentation().catch((error) => setStatus(error.message, true)));
 
+setupRevealObserver();
 loadHealth().catch((error) => setStatus(error.message, true));
