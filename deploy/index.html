@@ -26,6 +26,7 @@
           linear-gradient(180deg, #091523, #040910);
         overflow-x: hidden;
       }
+      body.splash-active { overflow: hidden; }
       .halo {
         position: fixed;
         width: 48vw;
@@ -38,6 +39,110 @@
       }
       .halo.a { background: #34d399; left: -15vw; top: -16vw; }
       .halo.b { background: #f59e0b; right: -18vw; bottom: -10vw; }
+      .splash {
+        position: fixed;
+        inset: 0;
+        z-index: 25;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 28% 20%, rgba(52, 211, 153, 0.24), rgba(4, 13, 24, 0.94) 45%),
+          radial-gradient(circle at 78% 72%, rgba(245, 158, 11, 0.26), rgba(4, 13, 24, 0.98) 54%),
+          #040d17;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 850ms ease, visibility 850ms ease;
+      }
+      .splash.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+      .splash.fade-out {
+        opacity: 0;
+        visibility: hidden;
+      }
+      .splash-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(20px);
+        opacity: 0.52;
+        pointer-events: none;
+      }
+      .splash-orb.one {
+        width: 300px;
+        height: 300px;
+        left: 10%;
+        top: 10%;
+        background: radial-gradient(circle, rgba(52, 211, 153, 0.62), rgba(52, 211, 153, 0));
+        animation: drift 8.8s ease-in-out infinite;
+      }
+      .splash-orb.two {
+        width: 340px;
+        height: 340px;
+        right: 8%;
+        bottom: 10%;
+        background: radial-gradient(circle, rgba(251, 146, 60, 0.54), rgba(251, 146, 60, 0));
+        animation: drift 10.8s ease-in-out infinite reverse;
+      }
+      .splash-core {
+        position: relative;
+        z-index: 2;
+        width: min(760px, calc(100vw - 34px));
+        text-align: center;
+        padding: clamp(24px, 5vw, 54px);
+        border-radius: 24px;
+        border: 1px solid rgba(129, 206, 255, 0.32);
+        background: rgba(3, 13, 24, 0.7);
+        box-shadow: 0 18px 85px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(14px);
+      }
+      .splash-kicker {
+        display: inline-block;
+        padding: 7px 12px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.76rem;
+        color: #bff5e5;
+        border: 1px solid rgba(132, 255, 218, 0.44);
+        background: rgba(4, 16, 30, 0.5);
+      }
+      .splash h2 {
+        margin-top: 14px;
+        font-size: clamp(1.95rem, 4.8vw, 3.8rem);
+        line-height: 0.98;
+      }
+      .splash p {
+        margin: 12px auto 0;
+        max-width: 650px;
+        color: #cfe2f6;
+      }
+      .equalizer {
+        margin: 22px auto 20px;
+        width: 170px;
+        height: 52px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .equalizer span {
+        width: 11px;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #47f4ce, #11b7a3);
+        transform-origin: bottom;
+        animation: eqIdle 1.6s ease-in-out infinite;
+      }
+      .splash.playing .equalizer span {
+        animation-name: eqPlay;
+        animation-duration: 880ms;
+      }
+      .equalizer span:nth-child(2) { animation-delay: 120ms; }
+      .equalizer span:nth-child(3) { animation-delay: 220ms; }
+      .equalizer span:nth-child(4) { animation-delay: 320ms; }
+      .equalizer span:nth-child(5) { animation-delay: 420ms; }
 
       .hero {
         position: relative;
@@ -176,26 +281,55 @@
         gap: 7px;
       }
       .audio-dock audio { width: 100%; }
+      @keyframes drift {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        50% { transform: translate3d(20px, -18px, 0) scale(1.08); }
+      }
+      @keyframes eqIdle {
+        0%, 100% { height: 14px; opacity: 0.48; }
+        50% { height: 20px; opacity: 0.75; }
+      }
+      @keyframes eqPlay {
+        0%, 100% { height: 12px; opacity: 0.72; }
+        30% { height: 48px; opacity: 1; }
+        65% { height: 24px; opacity: 0.86; }
+      }
       @media (max-width: 860px) {
         .slide { min-height: 80vh; }
         .audio-dock { top: auto; bottom: 84px; right: 10px; }
       }
     </style>
   </head>
-  <body>
+  <body class="splash-active">
     <div class="halo a"></div>
     <div class="halo b"></div>
 
+    <section class="splash active" id="splash">
+      <div class="splash-orb one"></div>
+      <div class="splash-orb two"></div>
+      <div class="splash-core">
+        <span class="splash-kicker">Premium Intro Sequence</span>
+        <h2>Easy Pay Direct Opportunity Story</h2>
+        <p>
+          Press Start Intro to launch the vocal jingle, then fade into the presentation with instant narration and auto-scroll.
+        </p>
+        <div class="equalizer" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <button class="launch" id="splashGoBtn">Start Intro</button>
+      </div>
+    </section>
+
     <header class="hero" id="hero">
-      <img src="./1772768301148-easy-pay-direct-dd475c4a-splash.webp" alt="Presentation hero" />
+      <img src="./1772771101292-easy-pay-direct-c8b7a487-splash.webp" alt="Presentation hero" />
       <div class="hero-content">
         <span class="eyebrow">Automated Opportunity Story</span>
         <h1>Easy Pay Direct x Frank Sharpe</h1>
         <p>
-          A premium, real-time automation presentation: researched narrative, vocal jingle, human-style narration,
+          A premium, real-time automation presentation: researched narrative, vocal jingle, Maximilian narration,
           animated sequence, and direct delivery-ready execution.
         </p>
-        <button class="launch" id="startBtn">Start Premium Presentation</button>
+        <button class="launch" id="replayBtn">Replay Intro Sequence</button>
       </div>
     </header>
 
@@ -204,7 +338,7 @@
         <article class="card">
           <h2>Why Hire Frank Sharpe</h2>
           <p>
-            Together we can create a brilliant partnership that compounds growth. I ship complete systems, not fragmented prototypes. This beta demonstrates rapid
+            I build premium automation systems that help teams move faster with confidence. I ship complete systems, not fragmented prototypes. This beta demonstrates rapid
             production from strategy to delivery with measurable artifacts at every stage.
           </p>
         </article>
@@ -234,7 +368,7 @@
             <div>1. Company analysis + narrative framing</div>
             <div>2. Stable Horde visual generation</div>
             <div>3. Sonauto vocal jingle generation (~28s)</div>
-            <div>4. Human-style narration voice (macos_say/Ava)</div>
+            <div>4. Maximilian narration voice (supertonic/M2 (requested James))</div>
             <div>5. Animated splash and timed auto-scroll storytelling</div>
             <div>6. GitHub version control + Vercel deployment</div>
             <div>7. Brevo API for direct stakeholder delivery</div>
@@ -287,22 +421,24 @@ Generated: March 5, 2026
     </main>
 
     <aside class="audio-dock">
-      <audio id="jingle" controls src="./1772768301148-easy-pay-direct-dd475c4a-jingle-clip.mp3"></audio>
-      <audio id="narration" controls src="./1772768301148-easy-pay-direct-dd475c4a-narration.wav"></audio>
+      <audio id="jingle" controls src="./1772771101292-easy-pay-direct-c8b7a487-jingle-clip.mp3"></audio>
+      <audio id="narration" controls src="./1772771101292-easy-pay-direct-c8b7a487-narration.wav"></audio>
     </aside>
 
     <div class="caption" id="captionBox">
       <small>Narration</small>
-      <div id="captionLine">Press “Start Premium Presentation” to begin.</div>
+      <div id="captionLine">Press “Start Intro” to begin.</div>
     </div>
 
     <script>
-      const startBtn = document.getElementById("startBtn");
+      const splash = document.getElementById("splash");
+      const splashGoBtn = document.getElementById("splashGoBtn");
+      const replayBtn = document.getElementById("replayBtn");
       const jingle = document.getElementById("jingle");
       const narration = document.getElementById("narration");
       const captionLine = document.getElementById("captionLine");
       const slides = Array.from(document.querySelectorAll(".slide"));
-      const scriptLines = ["Welcome to the Easy Pay Direct opportunity presentation.","I am Frank Sharpe, and I bring 10+ years of builder execution across automation and delivery.","Operating since 2000 with over 20 years in payment processing.","This presentation was generated through a live automation stack in real time.","The pipeline includes company research, image generation, vocal jingle production, and premium storytelling flow.","It then deploys to Vercel and sends direct delivery by Brevo for immediate stakeholder review.","Together we can create a brilliant partnership that compounds growth."];
+      const scriptLines = ["Welcome to the Easy Pay Direct opportunity presentation.","I am Frank Sharpe, and I bring 10+ years of builder execution across automation and delivery.","Operating since 2000 with over 20 years in payment processing.","This presentation was generated through a live automation stack in real time.","The pipeline includes company research, image generation, vocal jingle production, and premium storytelling flow.","It then deploys to Vercel and sends direct delivery by Brevo for immediate stakeholder review.","I build premium automation systems that help teams move faster with confidence."];
 
       let autoTimer = null;
       let captionTimer = null;
@@ -346,19 +482,47 @@ Generated: March 5, 2026
         }, 4200);
       }
 
-      async function runPresentation() {
-        startAutoScroll();
-        startCaptions();
+      function waitMs(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
 
+      async function playToEnd(audioEl) {
+        audioEl.currentTime = 0;
+        await audioEl.play();
+        await new Promise((resolve) => {
+          audioEl.onended = resolve;
+          audioEl.onerror = resolve;
+        });
+      }
+
+      function showSplashPlaying() {
+        splash.classList.remove("fade-out");
+        splash.classList.add("active", "playing");
+        document.body.classList.add("splash-active");
+      }
+
+      async function fadeOutSplash() {
+        splash.classList.remove("playing");
+        splash.classList.add("fade-out");
+        await waitMs(850);
+        splash.classList.remove("active", "fade-out");
+        document.body.classList.remove("splash-active");
+      }
+
+      async function runPresentation() {
+        showSplashPlaying();
+        splashGoBtn.disabled = true;
+        captionLine.textContent = "Intro sequence is launching...";
         try {
           if (jingle?.src) {
-            jingle.currentTime = 0;
-            await jingle.play();
-            await new Promise((resolve) => {
-              jingle.onended = resolve;
-              jingle.onerror = resolve;
-            });
+            await playToEnd(jingle);
+          } else {
+            await waitMs(2500);
           }
+
+          await fadeOutSplash();
+          startAutoScroll();
+          startCaptions();
 
           if (narration?.src) {
             narration.currentTime = 0;
@@ -366,10 +530,13 @@ Generated: March 5, 2026
           }
         } catch {
           captionLine.textContent = "Autoplay blocked. Press play on the audio docks to continue.";
+        } finally {
+          splashGoBtn.disabled = false;
         }
       }
 
-      startBtn.addEventListener("click", runPresentation);
+      splashGoBtn.addEventListener("click", runPresentation);
+      replayBtn.addEventListener("click", runPresentation);
     </script>
   </body>
 </html>

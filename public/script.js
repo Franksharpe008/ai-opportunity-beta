@@ -10,6 +10,11 @@ const els = {
   ttsBtn: $("ttsBtn"),
   emailBtn: $("emailBtn"),
   startBtn: $("startBtn"),
+  replayBtn: $("replayBtn"),
+  splash: $("splash"),
+  splashTitle: $("splashTitle"),
+  splashSub: $("splashSub"),
+  splashGoBtn: $("splashGoBtn"),
   status: $("status"),
   checks: $("checks"),
   heroImage: $("heroImage"),
@@ -29,8 +34,19 @@ const state = {
   summary: null,
   scriptLines: [],
   autoTimer: null,
-  captionTimer: null
+  captionTimer: null,
+  sequenceRunning: false
 };
+
+function formatVoiceLabel(voice) {
+  const engine = voice?.engine || "tts";
+  const actual = voice?.voice || "voice";
+  const requested = voice?.requestedVoice;
+  if (requested && requested !== actual) {
+    return `${engine}/${actual} (requested ${requested})`;
+  }
+  return `${engine}/${actual}`;
+}
 
 function setStatus(message, isError = false) {
   els.status.textContent = message;
@@ -74,8 +90,8 @@ function setStack(summary) {
     "Company analysis and strategic narrative framing",
     "Stable Horde visual generation",
     `Sonauto vocal jingle generation (~${summary?.jingle?.clipSeconds || 28}s)`,
-    `Human-style narration voice (${summary?.voice?.engine || "tts"}/${summary?.voice?.voice || "voice"})`,
-    "Animated splash and timed auto-scroll storytelling",
+    `Maximilian narration voice (${formatVoiceLabel(summary?.voice)})`,
+    "Animated splash, cinematic fade, and timed storytelling",
     "GitHub version control and Vercel deployment",
     "Brevo API delivery for stakeholders"
   ];
@@ -90,7 +106,7 @@ function setStack(summary) {
 
 function fillPresentation(summary) {
   els.heroTitle.textContent = `${summary.company} x Frank Sharpe`;
-  els.heroSub.textContent = "Premium real-time automation presentation with vocal jingle, human narration, and executable delivery.";
+  els.heroSub.textContent = "Premium real-time automation presentation with vocal jingle, Maximilian narration, and executable delivery.";
   els.whyHire.textContent = `I have ${summary.yearsExperience} of builder execution focused on reliable outcomes. This demo proves I can ship from concept to polished delivery quickly and consistently.`;
   setList(els.companyFacts, summary.companyProfile?.facts || []);
   setList(els.companyAlignment, summary.companyProfile?.alignment || []);
@@ -102,6 +118,8 @@ function fillPresentation(summary) {
   if (summary.narration?.url) els.narration.src = summary.narration.url;
 
   state.scriptLines = summary.script || [summary.motivation];
+  els.splashTitle.textContent = `${summary.company} Premium Intro`;
+  els.splashSub.textContent = "Cinematic jingle is about to load. After fade-in to the site, Maximilian narration and auto-scroll begin instantly.";
 }
 
 function stopAutoScroll() {
@@ -123,7 +141,10 @@ function startAutoScroll() {
 }
 
 function startCaptions() {
-  if (state.captionTimer) clearInterval(state.captionTimer);
+  if (state.captionTimer) {
+    clearInterval(state.captionTimer);
+    state.captionTimer = null;
+  }
 
   let idx = 0;
   els.captionLine.textContent = state.scriptLines[idx] || "";
@@ -137,6 +158,77 @@ function startCaptions() {
     }
     els.captionLine.textContent = state.scriptLines[idx];
   }, 4300);
+}
+
+function waitMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function showSplashOverlay() {
+  els.splash.classList.remove("hidden", "fade-out");
+  els.splash.classList.add("active");
+  document.body.classList.add("splash-active");
+}
+
+async function fadeOutSplash() {
+  els.splash.classList.remove("playing");
+  els.splash.classList.add("fade-out");
+  await waitMs(850);
+  els.splash.classList.remove("active", "fade-out");
+  els.splash.classList.add("hidden");
+  document.body.classList.remove("splash-active");
+}
+
+async function playToEnd(audioEl) {
+  audioEl.currentTime = 0;
+  await audioEl.play();
+  await new Promise((resolve) => {
+    audioEl.onended = resolve;
+    audioEl.onerror = resolve;
+  });
+}
+
+async function startSequence() {
+  if (!state.summary) {
+    setStatus("Run the pipeline first.", true);
+    return;
+  }
+
+  if (state.sequenceRunning) {
+    return;
+  }
+
+  state.sequenceRunning = true;
+  showSplashOverlay();
+  els.splash.classList.add("playing");
+  els.splashGoBtn.disabled = true;
+  els.captionLine.textContent = "Intro sequence is launching...";
+
+  try {
+    setStatus("Playing splash jingle with animation...");
+    if (els.jingle.src) {
+      await playToEnd(els.jingle);
+    } else {
+      await waitMs(2500);
+    }
+
+    els.splashSub.textContent = "Transitioning into narration and auto-scroll...";
+    await fadeOutSplash();
+
+    startAutoScroll();
+    startCaptions();
+
+    setStatus("Narration started. Auto-scroll and captions are active.");
+    if (els.narration.src) {
+      els.narration.currentTime = 0;
+      await els.narration.play();
+    }
+  } catch {
+    setStatus("Autoplay blocked. Press play on the audio controls.", true);
+  } finally {
+    state.sequenceRunning = false;
+    els.splashGoBtn.disabled = false;
+  }
 }
 
 async function verify() {
@@ -155,12 +247,12 @@ async function runPipeline() {
   fillPresentation(result.summary);
 
   const fallbackNote = result.summary?.jingle?.error ? ` | ${result.summary.jingle.error}` : "";
-  setStatus(`Pipeline complete. Voice=${result.summary.voice.voice}, Jingle=${result.summary.jingle.provider}${fallbackNote}`);
+  setStatus(`Pipeline complete. Voice=${formatVoiceLabel(result.summary.voice)}, Jingle=${result.summary.jingle.provider}${fallbackNote}. Launch intro when ready.`);
 }
 
 async function regenerateNarration() {
   const input = currentInput();
-  setStatus("Generating human-style narration...");
+  setStatus("Generating Maximilian narration...");
   const result = await api("/api/tts", input);
 
   if (!state.summary) {
@@ -183,7 +275,7 @@ async function regenerateNarration() {
   state.summary.script = [result.text, "Narration regenerated in real time."];
   fillPresentation(state.summary);
 
-  setStatus(`Narration ready with ${result.voice.engine}/${result.voice.voice}.`);
+  setStatus(`Narration ready with ${formatVoiceLabel(result.voice)}.`);
 }
 
 async function sendEmail() {
@@ -220,35 +312,6 @@ async function sendEmail() {
   setStatus(`Email sent. Message ID: ${result.result.MESSAGE_ID || "unknown"}`);
 }
 
-async function startPresentation() {
-  if (!state.summary) {
-    setStatus("Run the pipeline first.", true);
-    return;
-  }
-
-  startAutoScroll();
-  startCaptions();
-  setStatus("Presentation started: jingle, narration, and auto-scroll active.");
-
-  try {
-    if (els.jingle.src) {
-      els.jingle.currentTime = 0;
-      await els.jingle.play();
-      await new Promise((resolve) => {
-        els.jingle.onended = resolve;
-        els.jingle.onerror = resolve;
-      });
-    }
-
-    if (els.narration.src) {
-      els.narration.currentTime = 0;
-      await els.narration.play();
-    }
-  } catch {
-    setStatus("Autoplay blocked. Use audio controls manually.", true);
-  }
-}
-
 function setupRevealObserver() {
   const slides = Array.from(document.querySelectorAll(".slide"));
   const observer = new IntersectionObserver((entries) => {
@@ -266,14 +329,16 @@ async function loadHealth() {
   if (body.defaultCompany) els.company.value = body.defaultCompany;
   if (body.defaultRecipient) els.recipient.value = body.defaultRecipient;
 
-  setStatus(`Ready. Voice=${body.tts.engine}/${body.tts.voice}`);
+  setStatus(`Ready. Voice=${formatVoiceLabel(body.tts)}`);
 }
 
 els.verifyBtn.addEventListener("click", () => verify().catch((error) => setStatus(error.message, true)));
 els.pipelineBtn.addEventListener("click", () => runPipeline().catch((error) => setStatus(error.message, true)));
 els.ttsBtn.addEventListener("click", () => regenerateNarration().catch((error) => setStatus(error.message, true)));
 els.emailBtn.addEventListener("click", () => sendEmail().catch((error) => setStatus(error.message, true)));
-els.startBtn.addEventListener("click", () => startPresentation().catch((error) => setStatus(error.message, true)));
+els.startBtn.addEventListener("click", () => startSequence().catch((error) => setStatus(error.message, true)));
+els.replayBtn.addEventListener("click", () => startSequence().catch((error) => setStatus(error.message, true)));
+els.splashGoBtn.addEventListener("click", () => startSequence().catch((error) => setStatus(error.message, true)));
 
 setupRevealObserver();
 loadHealth().catch((error) => setStatus(error.message, true));

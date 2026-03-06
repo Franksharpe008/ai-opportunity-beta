@@ -27,11 +27,12 @@ const SONAUTO_API_KEY = process.env.SONAUTO_API_KEY || "";
 
 const SUPERTONIC_BIN = process.env.SUPERTONIC_BIN || "/Users/franksharpe/clawd/discord-voice-assistant/.venv312/bin/supertonic";
 const SUPERTONIC_MODEL = process.env.SUPERTONIC_MODEL || "supertonic-2";
-const SUPERTONIC_VOICE = process.env.SUPERTONIC_VOICE || "M2";
+const SUPERTONIC_VOICE = process.env.SUPERTONIC_VOICE || "James";
+const SUPERTONIC_JAMES_FALLBACK = process.env.SUPERTONIC_JAMES_FALLBACK || "M2";
 const SUPERTONIC_LANG = process.env.SUPERTONIC_LANG || "en";
 const SUPERTONIC_STEPS = String(process.env.SUPERTONIC_STEPS || 10);
 const SUPERTONIC_SPEED = String(process.env.SUPERTONIC_SPEED || 1.0);
-const TTS_ENGINE = String(process.env.TTS_ENGINE || (process.platform === "darwin" ? "macos_say" : "supertonic")).toLowerCase();
+const TTS_ENGINE = String(process.env.TTS_ENGINE || "supertonic").toLowerCase();
 const MACOS_TTS_VOICE = process.env.MACOS_TTS_VOICE || "Ava";
 const MACOS_TTS_RATE = String(process.env.MACOS_TTS_RATE || 190);
 const JINGLE_CLIP_SECONDS = Number(process.env.JINGLE_CLIP_SECONDS || 28);
@@ -77,6 +78,23 @@ function safeName(text) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function resolveSupertonicVoice(voiceName) {
+  const raw = String(voiceName || "").trim();
+  if (!raw) {
+    return "M1";
+  }
+
+  if (/^[FM][1-5]$/i.test(raw)) {
+    return raw.toUpperCase();
+  }
+
+  if (raw.toLowerCase() === "james") {
+    return resolveSupertonicVoice(SUPERTONIC_JAMES_FALLBACK);
+  }
+
+  return raw;
 }
 
 async function runCmd(command, args, timeout = 120000) {
@@ -187,12 +205,14 @@ function getVoiceIdentity() {
   return {
     engine: "supertonic",
     model: SUPERTONIC_MODEL,
-    voice: SUPERTONIC_VOICE,
+    voice: resolveSupertonicVoice(SUPERTONIC_VOICE),
+    requestedVoice: SUPERTONIC_VOICE,
     lang: SUPERTONIC_LANG
   };
 }
 
 async function synthesizeSpeech(text, outWavPath) {
+  const resolvedVoice = resolveSupertonicVoice(SUPERTONIC_VOICE);
   if (TTS_ENGINE === "macos_say") {
     const outAiff = `${outWavPath}.aiff`;
     await runCmd("say", ["-v", MACOS_TTS_VOICE, "-r", MACOS_TTS_RATE, "-o", outAiff, text], 120000);
@@ -228,7 +248,7 @@ async function synthesizeSpeech(text, outWavPath) {
       "--lang",
       SUPERTONIC_LANG,
       "--voice",
-      SUPERTONIC_VOICE,
+      resolvedVoice,
       "--steps",
       SUPERTONIC_STEPS,
       "--speed",
