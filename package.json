@@ -1,0 +1,16 @@
+{
+  "name": "ai-opportunity-beta",
+  "version": "0.1.0",
+  "description": "Interactive beta pipeline for company opportunity demos",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "export:showcase": "node scripts/export-showcase.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2"
+  }
+}
