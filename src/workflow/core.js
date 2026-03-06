@@ -244,6 +244,35 @@ function parseKvOutput(raw) {
   }));
 }
 
+async function loadRunContext(selector) {
+  const { manifest } = await resolveRun(selector);
+  const analysisPath = manifest?.paths?.analysisJson;
+  if (!analysisPath || !(await pathExists(analysisPath))) {
+    throw new Error("Run analysis artifact is missing.");
+  }
+
+  const analysis = await readJson(analysisPath);
+  return { manifest, analysis };
+}
+
+function toConfidence(value) {
+  return Number(value.toFixed(2));
+}
+
+function deriveTopOpportunity(manifest, analysis) {
+  const alignment = analysis?.companyProfile?.alignment || [];
+  if (alignment.length) {
+    return alignment[0];
+  }
+
+  const templateOpportunity = manifest?.templateConfig?.opportunityLanguage;
+  if (templateOpportunity) {
+    return templateOpportunity;
+  }
+
+  return "Automated campaign and presentation delivery with approval-gated execution.";
+}
+
 export async function generateRun(options) {
   await ensureWorkflowDirs();
 
@@ -501,4 +530,97 @@ export async function reportRun(selector) {
 export async function listRuns() {
   const runs = await listRunManifests();
   return runs.map(({ manifest }) => manifest);
+}
+
+export async function askRun(selector, question) {
+  const { manifest, analysis } = await loadRunContext(selector);
+  const q = String(question || "").trim();
+  if (!q) {
+    throw new Error("Question is required. Use --question \"...\".");
+  }
+
+  const lower = q.toLowerCase();
+  const facts = analysis?.companyProfile?.facts || [];
+  const alignment = analysis?.companyProfile?.alignment || [];
+  const source = analysis?.companyProfile?.source || "source not captured";
+  const topOpportunity = deriveTopOpportunity(manifest, analysis);
+
+  if (/(strongest|best|top).*(opportunity)|opportunity/.test(lower)) {
+    return {
+      question: q,
+      answer: topOpportunity,
+      confidence: toConfidence(facts.length ? 0.78 : 0.62),
+      evidence: facts.slice(0, 2),
+      source
+    };
+  }
+
+  if (/(weak|weakness|risk|gap)/.test(lower)) {
+    return {
+      question: q,
+      answer: "This run is opportunity-focused and does not store explicit weakness scoring. Use revise/research before client delivery if risk analysis is required.",
+      confidence: 0.55,
+      evidence: alignment.slice(0, 2),
+      source
+    };
+  }
+
+  if (/(why|reason|recommend)/.test(lower)) {
+    return {
+      question: q,
+      answer: `Recommendation is based on template framing (${manifest.template}) plus company signals from the run artifacts.`,
+      confidence: toConfidence(facts.length ? 0.75 : 0.6),
+      evidence: [...facts.slice(0, 1), ...alignment.slice(0, 1)],
+      source
+    };
+  }
+
+  if (/(source|evidence|proof|citation)/.test(lower)) {
+    return {
+      question: q,
+      answer: `Primary source reference: ${source}`,
+      confidence: 0.9,
+      evidence: facts.slice(0, 3),
+      source
+    };
+  }
+
+  if (/(automation|stack|pipeline)/.test(lower)) {
+    return {
+      question: q,
+      answer: "Pipeline uses report generation, Stable Horde image generation, jingle generation, narration synthesis, presentation build, deployment, and optional email delivery.",
+      confidence: 0.87,
+      evidence: [
+        `image=${manifest.providerConfig?.image || "unknown"}`,
+        `music=${manifest.providerConfig?.music || "unknown"}`,
+        `tts=${manifest.providerConfig?.tts || "unknown"}`
+      ],
+      source: "run manifest provider configuration"
+    };
+  }
+
+  return {
+    question: q,
+    answer: "Question received. Current query mode supports opportunities, rationale, weaknesses/risks, sources, and automation stack topics.",
+    confidence: 0.51,
+    evidence: [manifest.paths.analysisJson],
+    source
+  };
+}
+
+export async function explainRun(selector) {
+  const { manifest, analysis } = await loadRunContext(selector);
+  const facts = analysis?.companyProfile?.facts || [];
+  const topOpportunity = deriveTopOpportunity(manifest, analysis);
+  const reason = facts[0] || "Opportunity inferred from selected template framing and generated run metadata.";
+  const source = analysis?.companyProfile?.source || "source not captured";
+
+  return {
+    company: manifest.company,
+    runId: manifest.runId,
+    topOpportunity,
+    reason,
+    confidence: toConfidence(facts.length ? 0.78 : 0.63),
+    source
+  };
 }

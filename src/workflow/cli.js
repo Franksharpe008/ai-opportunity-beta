@@ -1,6 +1,8 @@
 import {
+  askRun,
   approveRun,
   deployRun,
+  explainRun,
   generateRun,
   listRuns,
   previewRun,
@@ -16,6 +18,8 @@ function printHelp() {
   frank-workflow approve <run-selector>
   frank-workflow deploy <run-selector> [--project epd-beta]
   frank-workflow send <run-selector> --to <email> [--dry-run]
+  frank-workflow ask <run-selector> --question "<text>"
+  frank-workflow explain <run-selector>
   frank-workflow report <run-selector>
   frank-workflow list
 `);
@@ -135,6 +139,21 @@ async function main() {
     console.log("status=sent");
     printManifestSummary(result.manifest);
     console.log(`messageId=${result.result.MESSAGE_ID || "unknown"}`);
+    return;
+  }
+
+  if (command === "ask") {
+    const selector = positional[0] || "";
+    const question = String(options.question || "").trim();
+    const result = await askRun(selector, question);
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (command === "explain") {
+    const selector = positional[0] || "";
+    const result = await explainRun(selector);
+    console.log(JSON.stringify(result, null, 2));
     return;
   }
 

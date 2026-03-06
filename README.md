@@ -45,6 +45,18 @@ npm run workflow -- report easy-pay-direct
 npm run workflow -- list
 ```
 
+Branded command set:
+
+```bash
+npm run flashdeck -- ignite "Easy Pay Direct" --template fintech
+npm run flashdeck -- show easy-pay-direct
+npm run flashdeck -- greenlight easy-pay-direct
+npm run flashdeck -- launch easy-pay-direct
+npm run flashdeck -- broadcast easy-pay-direct --to franksharpe008@gmail.com --dry-run
+npm run flashdeck -- ask easy-pay-direct --question "What is the strongest opportunity?"
+npm run flashdeck -- explain easy-pay-direct
+```
+
 Commands are gated:
 
 - `deploy` fails unless run is approved

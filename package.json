@@ -5,13 +5,15 @@
   "type": "module",
   "main": "src/server.js",
   "bin": {
-    "frank-workflow": "./bin/frank-workflow.js"
+    "frank-workflow": "./bin/frank-workflow.js",
+    "flashdeck": "./bin/flashdeck.js"
   },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "export:showcase": "node scripts/export-showcase.mjs",
-    "workflow": "node bin/frank-workflow.js"
+    "workflow": "node bin/frank-workflow.js",
+    "flashdeck": "node bin/flashdeck.js"
   },
   "dependencies": {
     "dotenv": "^16.5.0",
