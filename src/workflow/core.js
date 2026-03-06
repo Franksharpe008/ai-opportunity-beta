@@ -144,7 +144,8 @@ async function ensureWorkflowDirs() {
 }
 
 function buildDefaultMotivation(template, profile) {
-  return `${template.cta} ${profile.positioningStatement}`;
+  const personal = profile.personalNarrative ? `${profile.personalNarrative} ` : "";
+  return `${personal}${template.cta} ${profile.positioningStatement}`;
 }
 
 async function copyGeneratedAsset(urlPath, assetsDir) {
@@ -550,7 +551,7 @@ export async function askRun(selector, question) {
       question: q,
       answer: topOpportunity,
       confidence: toConfidence(facts.length ? 0.78 : 0.62),
-      evidence: facts.slice(0, 2),
+      evidence: facts.slice(0, 2).map((fact) => `Company signal: ${fact}`),
       source
     };
   }
@@ -570,7 +571,7 @@ export async function askRun(selector, question) {
       question: q,
       answer: `Recommendation is based on template framing (${manifest.template}) plus company signals from the run artifacts.`,
       confidence: toConfidence(facts.length ? 0.75 : 0.6),
-      evidence: [...facts.slice(0, 1), ...alignment.slice(0, 1)],
+      evidence: [...facts.slice(0, 1).map((fact) => `Company signal: ${fact}`), ...alignment.slice(0, 1)],
       source
     };
   }
@@ -612,7 +613,9 @@ export async function explainRun(selector) {
   const { manifest, analysis } = await loadRunContext(selector);
   const facts = analysis?.companyProfile?.facts || [];
   const topOpportunity = deriveTopOpportunity(manifest, analysis);
-  const reason = facts[0] || "Opportunity inferred from selected template framing and generated run metadata.";
+  const reason = facts[0]
+    ? `Company signal: ${facts[0]}`
+    : "Opportunity inferred from selected template framing and generated run metadata.";
   const source = analysis?.companyProfile?.source || "source not captured";
 
   return {

@@ -65,6 +65,11 @@ async function main() {
   const imageFile = await copyAsset(summary.image?.url);
   const jingleFile = await copyAsset(summary.jingle?.url);
   const narrationFile = await copyAsset(summary.narration?.url);
+  const logoFile = await copyAsset(summary.branding?.logoUrl);
+  const brandPrimary = summary.branding?.primary || "#35f1c3";
+  const brandSecondary = summary.branding?.secondary || "#16324a";
+  const brandAccent = summary.branding?.accent || "#ffb44c";
+  const brandTagline = summary.branding?.tagline || "Brand-ready visual system";
 
   const reportFileName = asFileName(summary.report?.reportUrl || "");
   const reportText = reportFileName ? await fs.readFile(path.join(GENERATED_DIR, reportFileName), "utf8") : "";
@@ -93,13 +98,14 @@ async function main() {
     <title>${esc(summary.company)} | Premium Opportunity Beta</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;700&family=Bebas+Neue&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
     <style>
       :root {
         --ink: #ecf6ff;
         --muted: #a7bed6;
-        --accent: #35f1c3;
-        --accent-2: #ffb44c;
+        --accent: ${esc(brandPrimary)};
+        --accent-2: ${esc(brandAccent)};
+        --brand-secondary: ${esc(brandSecondary)};
         --card: rgba(6, 19, 34, 0.7);
         --edge: rgba(167, 211, 246, 0.25);
       }
@@ -107,9 +113,9 @@ async function main() {
       body {
         margin: 0;
         color: var(--ink);
-        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-family: "Sora", system-ui, sans-serif;
         background:
-          radial-gradient(circle at 15% 12%, #20486a 0%, #0a1e31 36%, #050d18 70%),
+          radial-gradient(circle at 15% 12%, color-mix(in srgb, var(--accent) 38%, #20486a 62%) 0%, color-mix(in srgb, var(--brand-secondary) 70%, #0a1e31 30%) 36%, #050d18 70%),
           linear-gradient(180deg, #091523, #040910);
         overflow-x: hidden;
       }
@@ -124,8 +130,8 @@ async function main() {
         pointer-events: none;
         z-index: 0;
       }
-      .halo.a { background: #34d399; left: -15vw; top: -16vw; }
-      .halo.b { background: #f59e0b; right: -18vw; bottom: -10vw; }
+      .halo.a { background: color-mix(in srgb, var(--accent) 70%, #34d399 30%); left: -15vw; top: -16vw; }
+      .halo.b { background: color-mix(in srgb, var(--accent-2) 70%, #f59e0b 30%); right: -18vw; bottom: -10vw; }
       .splash {
         position: fixed;
         inset: 0;
@@ -259,6 +265,24 @@ async function main() {
         max-width: 960px;
         padding: 24px;
       }
+      .brandline {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(5, 22, 38, 0.54);
+        border: 1px solid rgba(143, 205, 250, 0.34);
+      }
+      .company-logo {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 2px;
+      }
       .eyebrow {
         display: inline-block;
         padding: 7px 12px;
@@ -270,11 +294,15 @@ async function main() {
         border: 1px solid rgba(132, 255, 218, 0.45);
         background: rgba(2, 13, 24, 0.45);
       }
-      h1,h2,h3 { font-family: "Fraunces", serif; margin: 0; }
+      h1,h2,h3 { font-family: "Bebas Neue", "Fraunces", serif; margin: 0; letter-spacing: 0.02em; }
       .hero h1 {
         margin-top: 14px;
         font-size: clamp(2rem, 5.4vw, 4.8rem);
         line-height: 0.98;
+        background: linear-gradient(110deg, #f7fcff 10%, color-mix(in srgb, var(--accent) 74%, #fff 26%) 48%, color-mix(in srgb, var(--accent-2) 76%, #ffe4c2 24%) 88%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
       }
       .hero p {
         margin: 14px auto 0;
@@ -368,6 +396,23 @@ async function main() {
         gap: 7px;
       }
       .audio-dock audio { width: 100%; }
+      .progress-track {
+        position: fixed;
+        right: 8px;
+        top: 7vh;
+        width: 6px;
+        height: 86vh;
+        background: rgba(139, 194, 240, 0.22);
+        border-radius: 999px;
+        z-index: 18;
+        overflow: hidden;
+      }
+      #scrollProgress {
+        width: 100%;
+        height: 4%;
+        background: linear-gradient(180deg, var(--accent), var(--accent-2));
+        border-radius: inherit;
+      }
       @keyframes drift {
         0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
         50% { transform: translate3d(20px, -18px, 0) scale(1.08); }
@@ -390,6 +435,7 @@ async function main() {
   <body class="splash-active">
     <div class="halo a"></div>
     <div class="halo b"></div>
+    <div class="progress-track" aria-hidden="true"><div id="scrollProgress"></div></div>
 
     <section class="splash active" id="splash">
       <div class="splash-orb one"></div>
@@ -410,6 +456,10 @@ async function main() {
     <header class="hero" id="hero">
       <img src="./${esc(imageFile)}" alt="Presentation hero" />
       <div class="hero-content">
+        <div class="brandline">
+          ${logoFile ? `<img class="company-logo" src="./${esc(logoFile)}" alt="${esc(summary.company)} logo" />` : ""}
+          <span>${esc(brandTagline)}</span>
+        </div>
         <span class="eyebrow">Automated Opportunity Story</span>
         <h1>${esc(summary.company)} x Frank Sharpe</h1>
         <p>
@@ -425,7 +475,7 @@ async function main() {
         <article class="card">
           <h2>Why Hire Frank Sharpe</h2>
           <p>
-            ${esc(summary.motivation)} I ship complete systems, not fragmented prototypes. This beta demonstrates rapid
+            I have been working with technology since age 10 and I build in this space every day. ${esc(summary.motivation)} I ship complete systems, not fragmented prototypes. This beta demonstrates rapid
             production from strategy to delivery with measurable artifacts at every stage.
           </p>
         </article>
@@ -491,6 +541,8 @@ async function main() {
       const splash = document.getElementById("splash");
       const splashGoBtn = document.getElementById("splashGoBtn");
       const replayBtn = document.getElementById("replayBtn");
+      const heroImage = document.querySelector(".hero img");
+      const scrollProgress = document.getElementById("scrollProgress");
       const jingle = document.getElementById("jingle");
       const narration = document.getElementById("narration");
       const captionLine = document.getElementById("captionLine");
@@ -499,6 +551,7 @@ async function main() {
 
       let autoTimer = null;
       let captionTimer = null;
+      let scrollRaf = null;
 
       const revealObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -537,6 +590,25 @@ async function main() {
           }
           captionLine.textContent = scriptLines[idx];
         }, 4200);
+      }
+
+      function updateScrollFx() {
+        scrollRaf = null;
+        const scrollY = window.scrollY || 0;
+        const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+        const progressPct = Math.max(4, Math.min(100, (scrollY / maxScroll) * 100));
+        scrollProgress.style.height = progressPct + "%";
+
+        if (heroImage) {
+          const heroShift = Math.min(120, scrollY * 0.09);
+          const heroScale = 1.06 + Math.min(0.08, scrollY / 8000);
+          heroImage.style.transform = "translateY(" + heroShift + "px) scale(" + heroScale + ")";
+        }
+      }
+
+      function queueScrollFx() {
+        if (scrollRaf) return;
+        scrollRaf = requestAnimationFrame(updateScrollFx);
       }
 
       function waitMs(ms) {
@@ -594,6 +666,9 @@ async function main() {
 
       splashGoBtn.addEventListener("click", runPresentation);
       replayBtn.addEventListener("click", runPresentation);
+      window.addEventListener("scroll", queueScrollFx, { passive: true });
+      window.addEventListener("resize", queueScrollFx);
+      queueScrollFx();
     </script>
   </body>
 </html>`;

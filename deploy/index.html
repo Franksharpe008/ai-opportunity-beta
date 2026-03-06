@@ -6,13 +6,14 @@
     <title>Easy Pay Direct | Premium Opportunity Beta</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;700&family=Bebas+Neue&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
     <style>
       :root {
         --ink: #ecf6ff;
         --muted: #a7bed6;
-        --accent: #35f1c3;
-        --accent-2: #ffb44c;
+        --accent: #00a6e3;
+        --accent-2: #f59e0b;
+        --brand-secondary: #10243e;
         --card: rgba(6, 19, 34, 0.7);
         --edge: rgba(167, 211, 246, 0.25);
       }
@@ -20,9 +21,9 @@
       body {
         margin: 0;
         color: var(--ink);
-        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-family: "Sora", system-ui, sans-serif;
         background:
-          radial-gradient(circle at 15% 12%, #20486a 0%, #0a1e31 36%, #050d18 70%),
+          radial-gradient(circle at 15% 12%, color-mix(in srgb, var(--accent) 38%, #20486a 62%) 0%, color-mix(in srgb, var(--brand-secondary) 70%, #0a1e31 30%) 36%, #050d18 70%),
           linear-gradient(180deg, #091523, #040910);
         overflow-x: hidden;
       }
@@ -37,8 +38,8 @@
         pointer-events: none;
         z-index: 0;
       }
-      .halo.a { background: #34d399; left: -15vw; top: -16vw; }
-      .halo.b { background: #f59e0b; right: -18vw; bottom: -10vw; }
+      .halo.a { background: color-mix(in srgb, var(--accent) 70%, #34d399 30%); left: -15vw; top: -16vw; }
+      .halo.b { background: color-mix(in srgb, var(--accent-2) 70%, #f59e0b 30%); right: -18vw; bottom: -10vw; }
       .splash {
         position: fixed;
         inset: 0;
@@ -172,6 +173,24 @@
         max-width: 960px;
         padding: 24px;
       }
+      .brandline {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(5, 22, 38, 0.54);
+        border: 1px solid rgba(143, 205, 250, 0.34);
+      }
+      .company-logo {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 2px;
+      }
       .eyebrow {
         display: inline-block;
         padding: 7px 12px;
@@ -183,11 +202,15 @@
         border: 1px solid rgba(132, 255, 218, 0.45);
         background: rgba(2, 13, 24, 0.45);
       }
-      h1,h2,h3 { font-family: "Fraunces", serif; margin: 0; }
+      h1,h2,h3 { font-family: "Bebas Neue", "Fraunces", serif; margin: 0; letter-spacing: 0.02em; }
       .hero h1 {
         margin-top: 14px;
         font-size: clamp(2rem, 5.4vw, 4.8rem);
         line-height: 0.98;
+        background: linear-gradient(110deg, #f7fcff 10%, color-mix(in srgb, var(--accent) 74%, #fff 26%) 48%, color-mix(in srgb, var(--accent-2) 76%, #ffe4c2 24%) 88%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
       }
       .hero p {
         margin: 14px auto 0;
@@ -281,6 +304,23 @@
         gap: 7px;
       }
       .audio-dock audio { width: 100%; }
+      .progress-track {
+        position: fixed;
+        right: 8px;
+        top: 7vh;
+        width: 6px;
+        height: 86vh;
+        background: rgba(139, 194, 240, 0.22);
+        border-radius: 999px;
+        z-index: 18;
+        overflow: hidden;
+      }
+      #scrollProgress {
+        width: 100%;
+        height: 4%;
+        background: linear-gradient(180deg, var(--accent), var(--accent-2));
+        border-radius: inherit;
+      }
       @keyframes drift {
         0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
         50% { transform: translate3d(20px, -18px, 0) scale(1.08); }
@@ -303,6 +343,7 @@
   <body class="splash-active">
     <div class="halo a"></div>
     <div class="halo b"></div>
+    <div class="progress-track" aria-hidden="true"><div id="scrollProgress"></div></div>
 
     <section class="splash active" id="splash">
       <div class="splash-orb one"></div>
@@ -321,8 +362,12 @@
     </section>
 
     <header class="hero" id="hero">
-      <img src="./1772794902470-easy-pay-direct-bcec9269-splash.webp" alt="Presentation hero" />
+      <img src="./1772796157680-easy-pay-direct-f4f6d5ce-splash.webp" alt="Presentation hero" />
       <div class="hero-content">
+        <div class="brandline">
+          <img class="company-logo" src="./1772796157680-easy-pay-direct-f4f6d5ce-logo.ico" alt="Easy Pay Direct logo" />
+          <span>Branded for payment trust and conversion</span>
+        </div>
         <span class="eyebrow">Automated Opportunity Story</span>
         <h1>Easy Pay Direct x Frank Sharpe</h1>
         <p>
@@ -338,7 +383,7 @@
         <article class="card">
           <h2>Why Hire Frank Sharpe</h2>
           <p>
-            If this aligns with your roadmap, I can deliver this as a reusable internal workflow. I build AI-driven automation systems that turn ideas into deployable, reusable workflows. My focus is practical execution: research, asset generation, structured delivery, and tools that businesses can actually use. I ship complete systems, not fragmented prototypes. This beta demonstrates rapid
+            I have been working with technology since age 10 and I build in this space every day. I build in this space every day and I execute with discipline. I ship complete systems, not fragmented prototypes. This beta demonstrates rapid
             production from strategy to delivery with measurable artifacts at every stage.
           </p>
         </article>
@@ -384,11 +429,13 @@
 Generated: March 6, 2026
 
 ## Why Hire Frank Sharpe
+- Personal background: working with technology since age 10 and building in this space every day.
 - Demonstrated hands-on builder experience with end-to-end delivery ownership.
 - Proven ability to ship AI automation pipelines that combine creative output and business operations.
 - Focus on systems that reduce cycle time, lower costs, and increase execution confidence.
 
 ## Company Snapshot (Easy Pay Direct)
+- Note: The following timeline facts describe the target company, not Frank's personal tenure.
 - Operating since 2000 with over 20 years in payment processing.
 - Supports 30+ business categories and complex/high-risk merchant needs.
 - Publishes 99.99% uptime claims for payment operations.
@@ -402,9 +449,7 @@ Generated: March 6, 2026
 ## Automation Stack Used In This Beta
 1. Opportunity report generation from structured company inputs.
 2. Hero image generation via Stable Horde.
-3. Jingle generation via Sonauto (with local fallback).
-4. Local Maximilian narration generation (Supertonic voice stack).
-5. Interactive splash page and auto-scrolling presentation flow.</pre>
+3. Jingle generation via Sonauto (with local fallback).</pre>
         </article>
       </section>
 
@@ -421,8 +466,8 @@ Generated: March 6, 2026
     </main>
 
     <aside class="audio-dock">
-      <audio id="jingle" controls src="./1772794902470-easy-pay-direct-bcec9269-jingle-clip.mp3"></audio>
-      <audio id="narration" controls src="./1772794902470-easy-pay-direct-bcec9269-narration.wav"></audio>
+      <audio id="jingle" controls src="./1772796157680-easy-pay-direct-f4f6d5ce-jingle-clip.mp3"></audio>
+      <audio id="narration" controls src="./1772796157680-easy-pay-direct-f4f6d5ce-narration.wav"></audio>
     </aside>
 
     <div class="caption" id="captionBox">
@@ -434,14 +479,17 @@ Generated: March 6, 2026
       const splash = document.getElementById("splash");
       const splashGoBtn = document.getElementById("splashGoBtn");
       const replayBtn = document.getElementById("replayBtn");
+      const heroImage = document.querySelector(".hero img");
+      const scrollProgress = document.getElementById("scrollProgress");
       const jingle = document.getElementById("jingle");
       const narration = document.getElementById("narration");
       const captionLine = document.getElementById("captionLine");
       const slides = Array.from(document.querySelectorAll(".slide"));
-      const scriptLines = ["Welcome to the Easy Pay Direct opportunity presentation.","I am Frank Sharpe, and I bring hands-on builder experience across automation and delivery.","Operating since 2000 with over 20 years in payment processing.","This presentation was generated through a live automation stack in real time.","The pipeline includes company research, image generation, vocal jingle production, and premium storytelling flow.","It then deploys to Vercel and sends direct delivery by Brevo for immediate stakeholder review.","If this aligns with your roadmap, I can deliver this as a reusable internal workflow. I build AI-driven automation systems that turn ideas into deployable, reusable workflows. My focus is practical execution: research, asset generation, structured delivery, and tools that businesses can actually use."];
+      const scriptLines = ["Welcome to the Easy Pay Direct opportunity presentation.","I am Frank Sharpe, and I bring hands-on builder experience across automation and delivery.","I have been working with technology since age ten, and I build in this space every day.","Company signal: Operating since 2000 with over 20 years in payment processing.","This presentation was generated through a live automation stack in real time.","The pipeline includes company research, image generation, vocal jingle production, and premium storytelling flow.","It then deploys to Vercel and sends direct delivery by Brevo for immediate stakeholder review.","I build in this space every day and I execute with discipline."];
 
       let autoTimer = null;
       let captionTimer = null;
+      let scrollRaf = null;
 
       const revealObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -480,6 +528,25 @@ Generated: March 6, 2026
           }
           captionLine.textContent = scriptLines[idx];
         }, 4200);
+      }
+
+      function updateScrollFx() {
+        scrollRaf = null;
+        const scrollY = window.scrollY || 0;
+        const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+        const progressPct = Math.max(4, Math.min(100, (scrollY / maxScroll) * 100));
+        scrollProgress.style.height = progressPct + "%";
+
+        if (heroImage) {
+          const heroShift = Math.min(120, scrollY * 0.09);
+          const heroScale = 1.06 + Math.min(0.08, scrollY / 8000);
+          heroImage.style.transform = "translateY(" + heroShift + "px) scale(" + heroScale + ")";
+        }
+      }
+
+      function queueScrollFx() {
+        if (scrollRaf) return;
+        scrollRaf = requestAnimationFrame(updateScrollFx);
       }
 
       function waitMs(ms) {
@@ -537,6 +604,9 @@ Generated: March 6, 2026
 
       splashGoBtn.addEventListener("click", runPresentation);
       replayBtn.addEventListener("click", runPresentation);
+      window.addEventListener("scroll", queueScrollFx, { passive: true });
+      window.addEventListener("resize", queueScrollFx);
+      queueScrollFx();
     </script>
   </body>
 </html>

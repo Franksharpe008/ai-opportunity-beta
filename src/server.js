@@ -42,6 +42,7 @@ const USE_PINNED_JINGLE = process.env.USE_PINNED_JINGLE === "1";
 const SEND_EMAIL_SCRIPT = process.env.SEND_EMAIL_SCRIPT || "/Users/franksharpe/clawd/scripts/send-email-now";
 const MAIL_HUB_SCRIPT = process.env.MAIL_HUB_SCRIPT || "/Users/franksharpe/clawd/scripts/mail-hub";
 const TONE_SCRIPT = process.env.TONE_SCRIPT || "/Users/franksharpe/clawd/scripts/generate-tone-track.py";
+const BUILDER_IDENTITY_LINE = process.env.BUILDER_IDENTITY_LINE || "I have been working with technology since age ten, and I build in this space every day.";
 
 const COMPANY_PROFILES = {
   "easy pay direct": {
@@ -57,7 +58,14 @@ const COMPANY_PROFILES = {
       "Cross-functional teams can reduce time-to-market with automated asset generation and delivery.",
       "A proof-first process matches payment-industry expectations for reliability."
     ],
-    source: "https://www.easypaydirect.com/"
+    source: "https://www.easypaydirect.com/",
+    brand: {
+      primary: "#00a6e3",
+      secondary: "#10243e",
+      accent: "#f59e0b",
+      tagline: "Branded for payment trust and conversion",
+      logo: "https://logo.clearbit.com/www.easypaydirect.com"
+    }
   }
 };
 
@@ -80,6 +88,32 @@ function safeName(text) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function hashNumber(text) {
+  return Array.from(String(text || "")).reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 7);
+}
+
+function fallbackBrandPalette(company) {
+  const seed = hashNumber(company);
+  const hue = seed % 360;
+  const hue2 = (hue + 42) % 360;
+  const hue3 = (hue + 208) % 360;
+  return {
+    primary: `hsl(${hue} 86% 56%)`,
+    secondary: `hsl(${hue3} 54% 22%)`,
+    accent: `hsl(${hue2} 88% 58%)`
+  };
+}
+
+function imageExtFromContentType(contentType) {
+  const ct = String(contentType || "").toLowerCase();
+  if (ct.includes("png")) return "png";
+  if (ct.includes("jpeg") || ct.includes("jpg")) return "jpg";
+  if (ct.includes("webp")) return "webp";
+  if (ct.includes("svg")) return "svg";
+  if (ct.includes("ico")) return "ico";
+  return "png";
 }
 
 function resolveSupertonicVoice(voiceName) {
@@ -498,8 +532,9 @@ function buildNarrationText(company, yearsExperience, motivation) {
   return [
     `Hi ${company} team.`,
     "I build production-ready automation systems that turn ideas into deployable assets fast.",
+    BUILDER_IDENTITY_LINE,
     `My background reflects ${yearsExperience}, with a practical focus on reliability and measurable business outcomes.`,
-    companyFact,
+    `About ${company}: ${companyFact}`,
     "In this live beta, I automate research, media generation, narration, web presentation, deployment, and direct delivery.",
     "The result is a repeatable pipeline your team can use to launch campaigns and executive-ready presentations in minutes.",
     `${motivation}`
@@ -524,8 +559,75 @@ function getCompanyProfile(company) {
       "A proof-first delivery flow supports business-critical operations.",
       "The system can be reused across hiring, sales, and marketing initiatives."
     ],
-    source: "User-provided target company"
+    source: "User-provided target company",
+    brand: {
+      ...fallbackBrandPalette(company),
+      tagline: "Generated brand-forward presentation theme",
+      logo: null
+    }
   };
+}
+
+async function resolveCompanyBranding(companyProfile, company, runId) {
+  const fallbackPalette = fallbackBrandPalette(company);
+  const brand = companyProfile?.brand || {};
+  const resolved = {
+    primary: brand.primary || fallbackPalette.primary,
+    secondary: brand.secondary || fallbackPalette.secondary,
+    accent: brand.accent || fallbackPalette.accent,
+    tagline: brand.tagline || "Brand-ready visual system",
+    source: companyProfile?.source || null,
+    logoProvider: "none",
+    logoUrl: null
+  };
+
+  let logoCandidate = brand.logo || null;
+  if (!logoCandidate && companyProfile?.source?.startsWith("http")) {
+    try {
+      const host = new URL(companyProfile.source).hostname;
+      logoCandidate = `https://logo.clearbit.com/${host}`;
+    } catch {
+      logoCandidate = null;
+    }
+  }
+
+  if (!logoCandidate) {
+    return resolved;
+  }
+
+  try {
+    const logoRes = await fetch(logoCandidate);
+    if (logoRes.ok) {
+      const ext = imageExtFromContentType(logoRes.headers.get("content-type"));
+      const outName = `${runId}-logo.${ext}`;
+      const outPath = path.join(GENERATED_DIR, outName);
+      await fs.writeFile(outPath, Buffer.from(await logoRes.arrayBuffer()));
+      resolved.logoUrl = `/generated/${outName}`;
+      resolved.logoProvider = "clearbit";
+      return resolved;
+    }
+  } catch {
+    // Continue to favicon fallback.
+  }
+
+  if (companyProfile?.source?.startsWith("http")) {
+    try {
+      const host = new URL(companyProfile.source).hostname;
+      const iconUrl = `https://${host}/favicon.ico`;
+      const iconRes = await fetch(iconUrl);
+      if (iconRes.ok) {
+        const outName = `${runId}-logo.ico`;
+        const outPath = path.join(GENERATED_DIR, outName);
+        await fs.writeFile(outPath, Buffer.from(await iconRes.arrayBuffer()));
+        resolved.logoUrl = `/generated/${outName}`;
+        resolved.logoProvider = "favicon";
+      }
+    } catch {
+      // Keep no-logo fallback.
+    }
+  }
+
+  return resolved;
 }
 
 function buildPresentationScript(company, yearsExperience, motivation) {
@@ -533,7 +635,8 @@ function buildPresentationScript(company, yearsExperience, motivation) {
   return [
     `Welcome to the ${profile.name} opportunity presentation.`,
     `I am Frank Sharpe, and I bring ${yearsExperience} across automation and delivery.`,
-    profile.facts[0],
+    BUILDER_IDENTITY_LINE,
+    `Company signal: ${profile.facts[0]}`,
     "This presentation was generated through a live automation stack in real time.",
     "The pipeline includes company research, image generation, vocal jingle production, and premium storytelling flow.",
     "It then deploys to Vercel and sends direct delivery by Brevo for immediate stakeholder review.",
@@ -557,11 +660,13 @@ function buildOpportunityReport({ company, yearsExperience, motivation }) {
     `Generated: ${date}`,
     "",
     "## Why Hire Frank Sharpe",
+    "- Personal background: working with technology since age 10 and building in this space every day.",
     `- Demonstrated ${yearsExperience} with end-to-end delivery ownership.`,
     "- Proven ability to ship AI automation pipelines that combine creative output and business operations.",
     "- Focus on systems that reduce cycle time, lower costs, and increase execution confidence.",
     "",
     `## Company Snapshot (${companyTitle})`,
+    "- Note: The following timeline facts describe the target company, not Frank's personal tenure.",
     ...companyFacts.map((fact) => `- ${fact}`),
     "",
     `## Alignment With ${companyTitle}`,
@@ -651,7 +756,7 @@ app.post("/api/image", async (req, res) => {
     const company = String(req.body.company || DEFAULT_COMPANY).trim() || DEFAULT_COMPANY;
     const prompt = String(
       req.body.prompt ||
-        `${company} fintech payment operations dashboard, cinematic glass UI, premium motion design lighting, trustworthy enterprise atmosphere`
+        `${company} branded business operations dashboard, cinematic glass UI, premium motion design lighting, trustworthy atmosphere`
     ).trim();
 
     const runId = `${Date.now()}-${safeName(company)}-${crypto.randomUUID().slice(0, 8)}`;
@@ -668,7 +773,7 @@ app.post("/api/jingle", async (req, res) => {
     const company = String(req.body.company || DEFAULT_COMPANY).trim() || DEFAULT_COMPANY;
     const runId = `${Date.now()}-${safeName(company)}-${crypto.randomUUID().slice(0, 8)}`;
     const prompt = String(
-      req.body.prompt || "high-energy fintech anthem with a catchy vocal hook, premium pop/electronic production, bold and inspiring"
+      req.body.prompt || `high-energy brand anthem for ${company} with a catchy lead vocal hook, premium pop/electronic production, bold and inspiring`
     ).trim();
 
     let jingle;
@@ -748,12 +853,14 @@ app.post("/api/pipeline", async (req, res) => {
 
     const report = buildOpportunityReport({ company, yearsExperience, motivation });
     const runBase = `${Date.now()}-${safeName(company)}-${crypto.randomUUID().slice(0, 8)}`;
+    const resolvedBranding = await resolveCompanyBranding(companyProfile, company, runBase);
 
     const reportFile = `${runBase}-report.md`;
     await fs.writeFile(path.join(GENERATED_DIR, reportFile), report, "utf8");
 
+    const imageBrandCue = companyProfile?.brand?.tagline || "premium business narrative";
     const image = await generateStableHordeImage(
-      `${company} payment processing visualization, polished fintech UI, executive presentation hero image`,
+      `${company} ${imageBrandCue}, polished branded UI, executive presentation hero image`,
       runBase
     );
 
@@ -764,7 +871,7 @@ app.post("/api/pipeline", async (req, res) => {
       try {
         jingle = await generateSonautoJingle(
           runBase,
-          "anthemic fintech launch song with lead vocal singing, inspirational lyrics, modern pop/electronic production, premium brand energy"
+          `anthemic launch song for ${company} with lead vocal singing, inspirational lyrics, modern pop/electronic production, premium brand energy`
         );
       } catch (error) {
         jingle = await generateFallbackJingle(runBase);
@@ -780,6 +887,7 @@ app.post("/api/pipeline", async (req, res) => {
       yearsExperience,
       motivation,
       companyProfile,
+      branding: resolvedBranding,
       script,
       report: {
         report,

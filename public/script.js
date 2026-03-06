@@ -15,6 +15,9 @@ const els = {
   splashTitle: $("splashTitle"),
   splashSub: $("splashSub"),
   splashGoBtn: $("splashGoBtn"),
+  companyLogo: $("companyLogo"),
+  brandTag: $("brandTag"),
+  scrollProgress: $("scrollProgress"),
   status: $("status"),
   checks: $("checks"),
   heroImage: $("heroImage"),
@@ -35,7 +38,8 @@ const state = {
   scriptLines: [],
   autoTimer: null,
   captionTimer: null,
-  sequenceRunning: false
+  sequenceRunning: false,
+  scrollRaf: null
 };
 
 function formatVoiceLabel(voice) {
@@ -104,10 +108,35 @@ function setStack(summary) {
   });
 }
 
+function applyBranding(summary) {
+  const branding = summary?.branding || {};
+  const root = document.documentElement;
+
+  if (branding.primary) {
+    root.style.setProperty("--brand-primary", branding.primary);
+  }
+  if (branding.secondary) {
+    root.style.setProperty("--brand-secondary", branding.secondary);
+  }
+  if (branding.accent) {
+    root.style.setProperty("--brand-accent", branding.accent);
+  }
+
+  if (branding.logoUrl) {
+    els.companyLogo.src = branding.logoUrl;
+    els.companyLogo.hidden = false;
+  } else {
+    els.companyLogo.hidden = true;
+  }
+
+  els.brandTag.textContent = branding.tagline || "Brand-ready visual system";
+}
+
 function fillPresentation(summary) {
+  applyBranding(summary);
   els.heroTitle.textContent = `${summary.company} x Frank Sharpe`;
   els.heroSub.textContent = "Premium real-time automation presentation with vocal jingle, Maximilian narration, and executable delivery.";
-  els.whyHire.textContent = `I have ${summary.yearsExperience} of builder execution focused on reliable outcomes. This demo proves I can ship from concept to polished delivery quickly and consistently.`;
+  els.whyHire.textContent = `I have been working with technology since age 10 and I build in this space every day. This demo proves I can ship from concept to polished delivery quickly and consistently.`;
   setList(els.companyFacts, summary.companyProfile?.facts || []);
   setList(els.companyAlignment, summary.companyProfile?.alignment || []);
   setStack(summary);
@@ -158,6 +187,25 @@ function startCaptions() {
     }
     els.captionLine.textContent = state.scriptLines[idx];
   }, 4300);
+}
+
+function updateScrollFx() {
+  state.scrollRaf = null;
+  const scrollY = window.scrollY || 0;
+  const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+  const progressPct = Math.max(4, Math.min(100, (scrollY / maxScroll) * 100));
+  els.scrollProgress.style.height = `${progressPct}%`;
+
+  const heroShift = Math.min(120, scrollY * 0.09);
+  const heroScale = 1.06 + Math.min(0.08, scrollY / 8000);
+  els.heroImage.style.transform = `translateY(${heroShift}px) scale(${heroScale})`;
+}
+
+function queueScrollFx() {
+  if (state.scrollRaf) {
+    return;
+  }
+  state.scrollRaf = requestAnimationFrame(updateScrollFx);
 }
 
 function waitMs(ms) {
@@ -341,4 +389,7 @@ els.replayBtn.addEventListener("click", () => startSequence().catch((error) => s
 els.splashGoBtn.addEventListener("click", () => startSequence().catch((error) => setStatus(error.message, true)));
 
 setupRevealObserver();
+window.addEventListener("scroll", queueScrollFx, { passive: true });
+window.addEventListener("resize", queueScrollFx);
+queueScrollFx();
 loadHealth().catch((error) => setStatus(error.message, true));
