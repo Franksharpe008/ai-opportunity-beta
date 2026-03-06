@@ -36,6 +36,8 @@ const TTS_ENGINE = String(process.env.TTS_ENGINE || "supertonic").toLowerCase();
 const MACOS_TTS_VOICE = process.env.MACOS_TTS_VOICE || "Ava";
 const MACOS_TTS_RATE = String(process.env.MACOS_TTS_RATE || 190);
 const JINGLE_CLIP_SECONDS = Number(process.env.JINGLE_CLIP_SECONDS || 28);
+const PINNED_JINGLE_FILE = process.env.PINNED_JINGLE_FILE || "";
+const USE_PINNED_JINGLE = process.env.USE_PINNED_JINGLE === "1";
 
 const SEND_EMAIL_SCRIPT = process.env.SEND_EMAIL_SCRIPT || "/Users/franksharpe/clawd/scripts/send-email-now";
 const MAIL_HUB_SCRIPT = process.env.MAIL_HUB_SCRIPT || "/Users/franksharpe/clawd/scripts/mail-hub";
@@ -365,6 +367,24 @@ async function generateFallbackJingle(runId) {
   };
 }
 
+async function generatePinnedJingle(runId) {
+  if (!PINNED_JINGLE_FILE) {
+    throw new Error("PINNED_JINGLE_FILE is not configured");
+  }
+
+  await fs.access(PINNED_JINGLE_FILE);
+  const ext = path.extname(PINNED_JINGLE_FILE) || ".mp3";
+  const dest = path.join(GENERATED_DIR, `${runId}-jingle-pinned${ext}`);
+  await fs.copyFile(PINNED_JINGLE_FILE, dest);
+
+  return {
+    path: dest,
+    url: `/generated/${path.basename(dest)}`,
+    provider: "pinned_asset",
+    clipSeconds: JINGLE_CLIP_SECONDS
+  };
+}
+
 async function generateSonautoJingle(runId, prompt) {
   if (!SONAUTO_API_KEY) {
     throw new Error("SONAUTO_API_KEY is missing");
@@ -478,7 +498,7 @@ function buildNarrationText(company, yearsExperience, motivation) {
   return [
     `Hi ${company} team.`,
     "I build production-ready automation systems that turn ideas into deployable assets fast.",
-    `I have been building and shipping for ${yearsExperience}, with a practical focus on reliability and measurable business outcomes.`,
+    `My background reflects ${yearsExperience}, with a practical focus on reliability and measurable business outcomes.`,
     companyFact,
     "In this live beta, I automate research, media generation, narration, web presentation, deployment, and direct delivery.",
     "The result is a repeatable pipeline your team can use to launch campaigns and executive-ready presentations in minutes.",
@@ -512,7 +532,7 @@ function buildPresentationScript(company, yearsExperience, motivation) {
   const profile = getCompanyProfile(company);
   return [
     `Welcome to the ${profile.name} opportunity presentation.`,
-    `I am Frank Sharpe, and I bring ${yearsExperience} of builder execution across automation and delivery.`,
+    `I am Frank Sharpe, and I bring ${yearsExperience} across automation and delivery.`,
     profile.facts[0],
     "This presentation was generated through a live automation stack in real time.",
     "The pipeline includes company research, image generation, vocal jingle production, and premium storytelling flow.",
@@ -537,7 +557,7 @@ function buildOpportunityReport({ company, yearsExperience, motivation }) {
     `Generated: ${date}`,
     "",
     "## Why Hire Frank Sharpe",
-    `- ${yearsExperience} of practical builder experience with end-to-end delivery ownership.`,
+    `- Demonstrated ${yearsExperience} with end-to-end delivery ownership.`,
     "- Proven ability to ship AI automation pipelines that combine creative output and business operations.",
     "- Focus on systems that reduce cycle time, lower costs, and increase execution confidence.",
     "",
@@ -612,7 +632,7 @@ app.post("/api/verify", async (_req, res) => {
 app.post("/api/report", async (req, res) => {
   try {
     const company = String(req.body.company || DEFAULT_COMPANY).trim() || DEFAULT_COMPANY;
-    const yearsExperience = String(req.body.yearsExperience || "10+").trim() || "10+";
+    const yearsExperience = String(req.body.yearsExperience || process.env.BUILDER_EXPERIENCE || "hands-on builder experience").trim() || "hands-on builder experience";
     const motivation = String(req.body.motivation || "Let's build something that creates real momentum and measurable growth.").trim();
 
     const report = buildOpportunityReport({ company, yearsExperience, motivation });
@@ -652,11 +672,15 @@ app.post("/api/jingle", async (req, res) => {
     ).trim();
 
     let jingle;
-    try {
-      jingle = await generateSonautoJingle(runId, prompt);
-    } catch (error) {
-      jingle = await generateFallbackJingle(runId);
-      jingle.error = `Sonauto failed, fallback used: ${error.message}`;
+    if (USE_PINNED_JINGLE || req.body.usePinnedJingle === true) {
+      jingle = await generatePinnedJingle(runId);
+    } else {
+      try {
+        jingle = await generateSonautoJingle(runId, prompt);
+      } catch (error) {
+        jingle = await generateFallbackJingle(runId);
+        jingle.error = `Sonauto failed, fallback used: ${error.message}`;
+      }
     }
 
     res.json({ ok: true, jingle });
@@ -668,7 +692,7 @@ app.post("/api/jingle", async (req, res) => {
 app.post("/api/tts", async (req, res) => {
   try {
     const company = String(req.body.company || DEFAULT_COMPANY).trim() || DEFAULT_COMPANY;
-    const yearsExperience = String(req.body.yearsExperience || "10+").trim() || "10+";
+    const yearsExperience = String(req.body.yearsExperience || process.env.BUILDER_EXPERIENCE || "hands-on builder experience").trim() || "hands-on builder experience";
     const motivation = String(req.body.motivation || "Let's build something that creates real momentum and measurable growth.").trim();
     const customText = String(req.body.text || "").trim();
 
@@ -717,7 +741,7 @@ app.post("/api/email", async (req, res) => {
 app.post("/api/pipeline", async (req, res) => {
   try {
     const company = String(req.body.company || DEFAULT_COMPANY).trim() || DEFAULT_COMPANY;
-    const yearsExperience = String(req.body.yearsExperience || "10+").trim() || "10+";
+    const yearsExperience = String(req.body.yearsExperience || process.env.BUILDER_EXPERIENCE || "hands-on builder experience").trim() || "hands-on builder experience";
     const motivation = String(req.body.motivation || "Let's build something that creates real momentum and measurable growth.").trim();
     const companyProfile = getCompanyProfile(company);
     const script = buildPresentationScript(company, yearsExperience, motivation);
@@ -734,14 +758,18 @@ app.post("/api/pipeline", async (req, res) => {
     );
 
     let jingle;
-    try {
-      jingle = await generateSonautoJingle(
-        runBase,
-        "anthemic fintech launch song with lead vocal singing, inspirational lyrics, modern pop/electronic production, premium brand energy"
-      );
-    } catch (error) {
-      jingle = await generateFallbackJingle(runBase);
-      jingle.error = `Sonauto failed, fallback used: ${error.message}`;
+    if (USE_PINNED_JINGLE || req.body.usePinnedJingle === true) {
+      jingle = await generatePinnedJingle(runBase);
+    } else {
+      try {
+        jingle = await generateSonautoJingle(
+          runBase,
+          "anthemic fintech launch song with lead vocal singing, inspirational lyrics, modern pop/electronic production, premium brand energy"
+        );
+      } catch (error) {
+        jingle = await generateFallbackJingle(runBase);
+        jingle.error = `Sonauto failed, fallback used: ${error.message}`;
+      }
     }
 
     const narrationText = buildNarrationText(company, yearsExperience, motivation);

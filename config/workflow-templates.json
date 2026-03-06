@@ -1,0 +1,44 @@
+{
+  "fintech": {
+    "label": "Fintech",
+    "framing": "risk-aware operations, trust signals, and conversion-focused automation",
+    "visualDirection": "clean enterprise interface, premium modern lighting, confidence and reliability",
+    "opportunityLanguage": "faster onboarding, stronger trust messaging, and repeatable campaign delivery",
+    "cta": "If this aligns with your roadmap, I can deliver this as a reusable internal workflow."
+  },
+  "barbershop": {
+    "label": "Barbershop",
+    "framing": "local loyalty growth, booking conversion, and community brand consistency",
+    "visualDirection": "warm local business aesthetic with clean booking UI cues",
+    "opportunityLanguage": "appointment reminders, retention offers, and referral automation",
+    "cta": "If this aligns with your shop goals, I can implement this as a reusable growth workflow."
+  },
+  "local-business": {
+    "label": "Local Business",
+    "framing": "repeat customer growth and operational efficiency",
+    "visualDirection": "friendly neighborhood brand with polished digital systems",
+    "opportunityLanguage": "lead follow-up automation, review generation, and monthly campaign cadence",
+    "cta": "If this aligns with your goals, I can implement this as a reusable local growth workflow."
+  },
+  "saas": {
+    "label": "SaaS",
+    "framing": "product-led growth, lifecycle messaging, and launch operations",
+    "visualDirection": "modern product dashboard with technical clarity",
+    "opportunityLanguage": "activation optimization, launch templates, and GTM automation",
+    "cta": "If this aligns with your product strategy, I can implement this as a reusable GTM workflow."
+  },
+  "restaurant": {
+    "label": "Restaurant",
+    "framing": "reservation velocity, repeat traffic, and offer cadence",
+    "visualDirection": "premium hospitality visuals with mobile-first conversion cues",
+    "opportunityLanguage": "promo automation, event campaigns, and follow-up offers",
+    "cta": "If this aligns with your growth goals, I can implement this as a reusable hospitality workflow."
+  },
+  "creative-music": {
+    "label": "Creative/Music",
+    "framing": "audience engagement, release campaigns, and content velocity",
+    "visualDirection": "expressive branded visuals with high-energy performance cues",
+    "opportunityLanguage": "release workflows, fan engagement loops, and content scheduling",
+    "cta": "If this aligns with your creative goals, I can implement this as a reusable release workflow."
+  }
+}

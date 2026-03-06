@@ -5,3 +5,5 @@ node_modules/
 *.log
 data/generated/*
 !data/generated/.gitkeep
+data/runs/*
+!data/runs/.gitkeep

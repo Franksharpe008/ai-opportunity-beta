@@ -70,7 +70,7 @@ async function api(path, payload = {}) {
 function currentInput() {
   return {
     company: els.company.value.trim() || "Easy Pay Direct",
-    yearsExperience: els.yearsExperience.value.trim() || "10+ years",
+    yearsExperience: els.yearsExperience.value.trim() || "hands-on builder experience",
     motivation: els.motivation.value.trim() || "Let's build a beautiful and brilliant partnership through reliable automation.",
     recipient: els.recipient.value.trim()
   };

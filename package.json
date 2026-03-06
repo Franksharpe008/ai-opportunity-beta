@@ -4,10 +4,14 @@
   "description": "Interactive beta pipeline for company opportunity demos",
   "type": "module",
   "main": "src/server.js",
+  "bin": {
+    "frank-workflow": "./bin/frank-workflow.js"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "export:showcase": "node scripts/export-showcase.mjs"
+    "export:showcase": "node scripts/export-showcase.mjs",
+    "workflow": "node bin/frank-workflow.js"
   },
   "dependencies": {
     "dotenv": "^16.5.0",
