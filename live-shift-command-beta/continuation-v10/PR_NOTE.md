@@ -1,0 +1,1 @@
+Draft review intent: use this branch for executable V10 acceptance and preview verification. It must not be merged into stale main until the live V9 production workspace is recovered and archive persistence passes.
