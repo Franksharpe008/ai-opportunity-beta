@@ -16,6 +16,7 @@ jobs:
   deploy:
     if: contains(github.event.head_commit.message, '[deploy-v10-production]')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: live-shift-command-beta/continuation-v10
@@ -26,18 +27,39 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Require deployment credential
-        run: test -n "$VERCEL_TOKEN"
       - name: Run V10 acceptance
         run: node tests/run-v10-acceptance.js
       - name: Build in-place releases from current production baseline
         run: node tools/prepare-inplace-production.mjs
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
+      - name: Authenticate Vercel
+        shell: bash
+        run: |
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "Using stored Vercel deployment token."
+          else
+            echo "No stored token. Starting Vercel secure device approval."
+            timeout 600s script -q -e -c "vercel login --no-color" /dev/null
+          fi
       - name: Deploy mobile to existing project
-        run: cd dist-inplace/mobile && vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+        shell: bash
+        run: |
+          cd dist-inplace/mobile
+          if [ -n "$VERCEL_TOKEN" ]; then
+            vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+          else
+            vercel deploy --prod --yes
+          fi
       - name: Deploy manager to existing project
-        run: cd dist-inplace/manager && vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+        shell: bash
+        run: |
+          cd dist-inplace/manager
+          if [ -n "$VERCEL_TOKEN" ]; then
+            vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+          else
+            vercel deploy --prod --yes
+          fi
       - name: Smoke existing URLs
         run: |
           curl -fsSL https://live-shift-command-v741-mobile.vercel.app/ | grep -q 'LSC V10 INPLACE MOBILE JS'
