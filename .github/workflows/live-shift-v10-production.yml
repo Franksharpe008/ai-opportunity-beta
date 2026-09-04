@@ -39,70 +39,82 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
       - name: Authenticate Vercel
+        id: vercel_auth
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          FORCE_COLOR: '0'
-          NO_COLOR: '1'
-          CI: '1'
         run: |
+          set -euo pipefail
           if [ -n "$VERCEL_TOKEN" ]; then
-            echo "Using stored Vercel deployment token."
-          else
-            echo "Starting Vercel secure device approval."
-            rm -f /tmp/vercel-login.log /tmp/vercel-comment.md
-            stdbuf -oL -eL vercel login --no-color > /tmp/vercel-login.log 2>&1 &
-            LOGIN_PID=$!
-            FOUND=0
-            for i in $(seq 1 60); do
-              sleep 1
-              if [ -s /tmp/vercel-login.log ]; then
-                cat /tmp/vercel-login.log
-                if grep -Eqi 'visit|verify|device|https://|vercel\.com' /tmp/vercel-login.log; then
-                  FOUND=1
-                  break
-                fi
-              fi
-              if ! kill -0 "$LOGIN_PID" 2>/dev/null; then
-                break
-              fi
-            done
-            LOGIN_TEXT=$(tail -40 /tmp/vercel-login.log 2>/dev/null || true)
-            {
-              echo '### Vercel approval required'
-              echo 'This approval authorizes the already-tested V10 release to deploy directly into the existing Live Shift Command manager/mobile projects.'
-              echo
-              echo '```text'
-              echo "$LOGIN_TEXT"
-              echo '```'
-            } > /tmp/vercel-comment.md
-            gh pr comment 1 --body-file /tmp/vercel-comment.md
-            if [ "$FOUND" -ne 1 ]; then
-              echo "Vercel approval URL was not detected."
-              cat /tmp/vercel-login.log || true
-              kill "$LOGIN_PID" 2>/dev/null || true
-              exit 1
-            fi
-            wait "$LOGIN_PID"
+            echo "::add-mask::$VERCEL_TOKEN"
+            echo "token=$VERCEL_TOKEN" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          CLIENT_ID='cl_HYyOPBNtFMfHhaUn9L4QPfTZz6TP47bp'
+          DISCOVERY=$(curl -fsSL https://vercel.com/.well-known/openid-configuration)
+          DEVICE_ENDPOINT=$(printf '%s' "$DISCOVERY" | jq -r '.device_authorization_endpoint')
+          TOKEN_ENDPOINT=$(printf '%s' "$DISCOVERY" | jq -r '.token_endpoint')
+          DEVICE=$(curl -fsSL -X POST "$DEVICE_ENDPOINT" \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode "client_id=$CLIENT_ID" \
+            --data-urlencode 'scope=openid offline_access')
+          DEVICE_CODE=$(printf '%s' "$DEVICE" | jq -r '.device_code')
+          USER_CODE=$(printf '%s' "$DEVICE" | jq -r '.user_code')
+          VERIFY_URL=$(printf '%s' "$DEVICE" | jq -r '.verification_uri_complete')
+          INTERVAL=$(printf '%s' "$DEVICE" | jq -r '.interval // 5')
+          EXPIRES=$(printf '%s' "$DEVICE" | jq -r '.expires_in // 600')
+          test -n "$DEVICE_CODE" && test "$DEVICE_CODE" != null
+          test -n "$VERIFY_URL" && test "$VERIFY_URL" != null
+
+          {
+            echo '### Vercel approval required'
+            echo 'Open the link below and approve the Vercel device login. After approval, this same job deploys V10 directly to the existing Live Shift Command mobile and manager projects.'
+            echo
+            echo "**Approve:** $VERIFY_URL"
+            echo
+            echo "Device code: \`$USER_CODE\`"
+          } > /tmp/vercel-comment.md
+          gh pr comment 1 --body-file /tmp/vercel-comment.md
+
+          DEADLINE=$(( $(date +%s) + EXPIRES ))
+          SLEEP="$INTERVAL"
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            RESP=$(curl -sS -X POST "$TOKEN_ENDPOINT" \
+              -H 'Content-Type: application/x-www-form-urlencoded' \
+              --data-urlencode "client_id=$CLIENT_ID" \
+              --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:device_code' \
+              --data-urlencode "device_code=$DEVICE_CODE")
+            ACCESS=$(printf '%s' "$RESP" | jq -r '.access_token // empty')
+            if [ -n "$ACCESS" ]; then
+              echo "::add-mask::$ACCESS"
+              echo "token=$ACCESS" >> "$GITHUB_OUTPUT"
+              echo 'Vercel device approval complete.'
+              exit 0
+            fi
+            ERR=$(printf '%s' "$RESP" | jq -r '.error // empty')
+            case "$ERR" in
+              authorization_pending|'') sleep "$SLEEP" ;;
+              slow_down) SLEEP=$((SLEEP+5)); sleep "$SLEEP" ;;
+              *) echo "Vercel authorization failed: $ERR"; exit 1 ;;
+            esac
+          done
+          echo 'Vercel device approval expired.'
+          exit 1
       - name: Deploy mobile to existing project
         shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ steps.vercel_auth.outputs.token }}
         run: |
           cd dist-inplace/mobile
-          if [ -n "$VERCEL_TOKEN" ]; then
-            vercel deploy --prod --yes --token "$VERCEL_TOKEN"
-          else
-            vercel deploy --prod --yes
-          fi
+          vercel deploy --prod --yes --token "$DEPLOY_TOKEN"
       - name: Deploy manager to existing project
         shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ steps.vercel_auth.outputs.token }}
         run: |
           cd dist-inplace/manager
-          if [ -n "$VERCEL_TOKEN" ]; then
-            vercel deploy --prod --yes --token "$VERCEL_TOKEN"
-          else
-            vercel deploy --prod --yes
-          fi
+          vercel deploy --prod --yes --token "$DEPLOY_TOKEN"
       - name: Smoke existing URLs
         run: |
           curl -fsSL https://live-shift-command-v741-mobile.vercel.app/ | grep -q 'LSC V10 INPLACE MOBILE JS'
