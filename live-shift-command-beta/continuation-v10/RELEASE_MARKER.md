@@ -1,23 +1,23 @@
-# V10 Production Release Marker
+# V10 Production Relaunch Marker
 
-Combined release: premium verification CTA + AI Brief / Shift Copilot reliability.
+Purpose: restore premium Live Shift Command behavior on the existing manager/mobile production projects with ECC (Error Correction Code) around AI Brief / Shift Copilot and the premium verification CTA.
 
 Validated before promotion:
-- V10 mocked/local acceptance run `33860204477`: SUCCESS
-- no real `/api/intelligence` POST was fired by assistant for this validation
-- earlier premium-only production run `33859375212` was cancelled at Vercel Authenticate; manager/mobile deploy steps were skipped
+- Live Shift V10 Acceptance run `33862245275`: SUCCESS
+- Live Shift Handoff Guard run `33862245273`: SUCCESS
+- no repeated live AI verification calls were used for this gate
 
 Release scope:
-- eliminate visible flashing between legacy `VERIFY LAST HOUR` / `LAST HOUR VERIFIED` and V10 backlog counts;
-- `lsc-v10-mobile.js` `1.3.1` renders the verification CTA slot hidden + empty before paint;
-- V10 verification UI is sole owner of backlog visibility/text;
-- add `lsc-v10-ai-reliability.js` `1.0.1` to manager + mobile;
-- real existing `/api/intelligence` remains primary;
-- `summary` / `copilot` gateway failure falls back to live shared evidence with `usageUnits: 0` and **zero second model call**;
-- `lsc-v10-ai-world.js` `1.2.0` supplies deliberate AI Brief/Copilot requests with hourly truth, verification trust, process-run context, previous shift, recovery math, handoff overlap and resolution memory;
-- preserve existing state/archive/intelligence, resolution guard, verification queue, static browser assets, Company Goal authority and all V8/V9 architecture;
-- production smoke must not POST to AI; Frank performs the real AI test live after deployment.
+- preserve the same V8 → V9 → V10 application, shared state, Plant Memory/archive and original intelligence backend;
+- keep manager Company Goal authoritative at `state.config.shiftGoal`;
+- keep premium verification CTA single-owner and eliminate legacy last-hour flicker;
+- `lsc-v10-ai-world.js` `1.3.0` attaches live world context to `summary`, `shift_summary`, `copilot`, and `shift_copilot`;
+- `lsc-v10-ai-reliability.js` `1.1.0` provides ECC around malformed/empty/non-2xx/timeout/network AI output;
+- real `/api/intelligence` remains primary;
+- ECC fallback makes no second model call and uses live shared evidence with `usageUnits: 0`;
+- no new provider, no new state service, no new archive, no new product;
+- production smoke must not spend AI.
 
-Deployment target remains ONLY the existing projects and regular URLs:
+Deployment targets ONLY:
 - Manager `prj_ETPejWyItkL7iE586cO4CbGlZWk6` → `https://live-shift-command-v74.vercel.app`
 - Mobile `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON` → `https://live-shift-command-v741-mobile.vercel.app`
