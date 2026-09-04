@@ -8,4 +8,5 @@ rows=[];for(const l of ['First Shift','Second Shift'])for(let n=0;n<2;n++)rows.p
 rows=[shift('First Shift',0,44),shift('Second Shift',0,43),shift('Third Shift',0,42)];s=E.build(rows);assert.equal(s.decision.decision,'HOLD');assert.equal(s.decision.confidence,'BUILDING');
 const nullShift=shift('First Shift',9,44);nullShift.production=nullShift.production.map(()=>({good:null,updatedAt:null}));assert.equal(E.shiftEvidence(nullShift,40.5),null);
 const zeroDefault=shift('First Shift',10,44);zeroDefault.production=zeroDefault.production.map(()=>({good:0,updatedAt:null}));assert.equal(E.shiftEvidence(zeroDefault,40.5),null);
+const causeShift=shift('Third Shift',12,40);causeShift.events=[{type:'downtime',startedAt:'2026-08-20T13:00:00Z',endedAt:'2026-08-20T13:10:00Z',issueCode:'FT01',fourM:'Method',causeDimensionExtension:'Measurement',verificationStatus:'verified_permanent'}];const p=E.pareto([causeShift]);assert.equal(p[0].dimension,'Measurement');assert.equal(p[0].framework,'6M');assert.equal(p[0].canonical4M,'Method');
 console.log('V10 CAPACITY ACCEPTANCE: PASS');
