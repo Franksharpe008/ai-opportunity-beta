@@ -24,6 +24,7 @@ V10 evolves the existing V9 runtime. The base V8/V9 modules remain because they 
 <!-- V10 evolution layer -->
 <script src="/lsc-v10-core.js"></script>
 <script src="/lsc-v10-ui.js"></script>
+<script src="/lsc-v10-cause-extension.js"></script>
 <script src="/lsc-v10-capacity.js"></script>
 <script src="/lsc-v10-capacity-ui.js"></script>
 <script src="/lsc-v10-brief.js"></script>
@@ -32,6 +33,8 @@ V10 evolves the existing V9 runtime. The base V8/V9 modules remain because they 
 V10 core deliberately loads after V9 so it can upgrade the existing `update()` shared-state writer from the hardcoded V7.9 schema to the V10 schema while retaining the same `/api/state`, revision and 409 conflict behavior.
 
 The manager V10 UI does not create a second Live Now area grid. It inserts a compact Process Actual action and process/run evidence line into the existing V9 Live Now surface. Calendar Day Reconstruction and Capacity Intelligence are the only new full manager sections.
+
+`lsc-v10-cause-extension.js` does not replace the canonical 4M classification or downtime code map. It adds a manager-only optional Measurement / Environment refinement when evidence supports the 6M extension. Capacity Pareto uses the refinement when present while retaining the canonical 4M value.
 
 The existing `MORNING MEETING BRIEF` button is upgraded in place by V10; there is no second V10 brief button.
 
@@ -55,7 +58,7 @@ The existing `MORNING MEETING BRIEF` button is upgraded in place by V10; there i
 <script src="/lsc-v10-mobile.js"></script>
 ```
 
-Mobile does not load manager capacity, Calendar Reconstruction or manager brief modules.
+Mobile does not load manager capacity, Calendar Reconstruction, manager brief, or optional 6M refinement modules.
 
 Mobile V10 adds only:
 
@@ -94,6 +97,7 @@ only during a confirmed state mutation. Merely opening a V10 preview must not mi
 
 Manager web:
 - may edit company goal / schedules / manager configuration
+- may refine a 4M cause to optional Measurement / Environment when evidence supports 6M
 - receives mobile/floor evidence
 - sees plant-wide capacity intelligence
 
