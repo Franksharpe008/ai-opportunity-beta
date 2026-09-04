@@ -34,6 +34,7 @@ jobs:
         run: |
           node --check lsc-v10-core.js
           node --check lsc-v10-mobile.js
+          node --check lsc-v10-floor-ops.js
           node --check lsc-v10-ui.js
           node --check lsc-v10-cause-extension.js
           node --check lsc-v10-capacity.js
