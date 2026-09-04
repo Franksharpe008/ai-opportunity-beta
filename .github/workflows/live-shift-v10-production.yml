@@ -8,9 +8,14 @@ on:
       - 'live-shift-command-beta/continuation-v10/**'
       - '.github/workflows/live-shift-v10-production.yml'
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 concurrency:
   group: live-shift-v10-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -35,12 +40,36 @@ jobs:
         run: npm install --global vercel@latest
       - name: Authenticate Vercel
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -n "$VERCEL_TOKEN" ]; then
             echo "Using stored Vercel deployment token."
           else
             echo "No stored token. Starting Vercel secure device approval."
-            timeout 600s script -q -e -c "vercel login --no-color" /dev/null
+            rm -f /tmp/vercel-login.log /tmp/vercel-login-clean.log
+            timeout 600s script -q -e -c "vercel login --no-color" /tmp/vercel-login.log &
+            LOGIN_PID=$!
+            for i in $(seq 1 45); do
+              sleep 1
+              if [ -s /tmp/vercel-login.log ]; then
+                sed -r 's/\x1B\[[0-9;]*[mGKHF]//g' /tmp/vercel-login.log | tr -d '\r' > /tmp/vercel-login-clean.log || true
+                if grep -Eq 'https://[^ ]*vercel[^ ]*|vercel\.com/[A-Za-z0-9_/?=&.-]+' /tmp/vercel-login-clean.log; then
+                  break
+                fi
+              fi
+            done
+            LOGIN_TEXT=$(tail -20 /tmp/vercel-login-clean.log 2>/dev/null || true)
+            {
+              echo '### Vercel approval required'
+              echo 'Approve this secure Vercel device login so the already-tested V10 release can continue directly into the existing manager/mobile projects.'
+              echo
+              echo '```text'
+              echo "$LOGIN_TEXT"
+              echo '```'
+            } > /tmp/vercel-comment.md
+            gh pr comment 1 --body-file /tmp/vercel-comment.md
+            wait $LOGIN_PID
           fi
       - name: Deploy mobile to existing project
         shell: bash
