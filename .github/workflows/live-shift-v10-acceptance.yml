@@ -7,6 +7,12 @@ on:
     paths:
       - 'live-shift-command-beta/continuation-v10/**'
       - '.github/workflows/live-shift-v10-acceptance.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'live-shift-command-beta/continuation-v10/**'
+      - '.github/workflows/live-shift-v10-acceptance.yml'
   workflow_dispatch:
 
 jobs:
