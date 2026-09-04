@@ -126,3 +126,20 @@ CI emitted:
 `SAFE V10 PROMOTION VERIFIED · shared revision 107 · browser assets static · verification queue loaded`
 
 Operational consequence: the old single-hour `VERIFY LAST HOUR` workflow is replaced by a recoverable, cross-shift verification backlog with offline pending-sync support, while AI remains explicit-use only and does not burn Cloudflare/model resources in the background.
+
+## 2026-09-04 — RB10 Resolve + Verify 422 isolated; closeout guard staged
+Frank tested the live Third Shift RB10 Vision Test incident on mobile. Classification and voice transcription worked, but the Resolve + Verify resolution statement failed to produce a structured closeout.
+
+Runtime evidence on manager deployment `dpl_9ygz671ciZGXTfoDh6go9r7My77f`:
+- POST `/api/intelligence` 200 at 08:19:26 UTC;
+- POST `/api/intelligence` 422 at 08:19:31 UTC;
+- repeated resolution attempts returned 422 at 08:21:07 and 08:21:32 UTC.
+
+The exact operator statement shown in the screenshot was: `They reset the vision system and we ran the four parts back through. They just reset it. It usually happens like this around midnight after midnight.` Shared state revision 107 remained healthy and the RB10 event remained open; no data was lost.
+
+Staged additive repair:
+- `lsc-v10-resolution-guard.js` leaves the existing `/api/intelligence` `enrich` call as the primary path. If the one intentional resolution call returns 422/network/invalid structured output, it makes no second model call. It converts only the supplied operator statement into the existing V8 enrichment shape so V8's existing Confirm Resolution + save path remains authoritative. For the regression phrase: reset vision system = action, four-part rerun = verification evidence, midnight pattern = recurrence signal, root cause remains not established, permanent verification is not claimed.
+- `lsc-v10-verification-ui.js` corrects the mobile CTA after every legacy/V10 rerender. It only shows actionable backlog (`1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, or pending sync); if all completed hours are verified, the CTA is hidden. This removes the visible fight with legacy `VERIFY LAST HOUR`.
+- No new provider, route, database, or autonomous AI loop. The resolution fallback is zero-model-call and only activates after the intentional primary enrich attempt fails.
+
+Required before production: V10 Acceptance and Handoff Guard must pass, then use only the existing in-place production workflow with live approval and verify both regular URLs plus the exact RB10 resolution regression.

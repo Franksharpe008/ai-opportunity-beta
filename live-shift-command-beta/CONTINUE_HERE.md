@@ -129,3 +129,17 @@ Do not rebuild or redeploy just to inspect. Use the live app with real plant dat
 
 # NON-NEGOTIABLES
 Same projects/URLs. No fake data. No null→zero. No double-counted quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollbacks. Shift Roster untouched. Verify regular URLs after every deployment. Update both handoff files after every meaningful modification. Handle approvals live and keep checking until they clear.
+
+# LATEST WORK IN PROGRESS — RESOLUTION CLOSEOUT + VERIFICATION LABEL HARDENING
+Production test on 2026-09-04 exposed two issues that must be fixed before the next manager demo:
+- mobile verification CTA visually fought between legacy `VERIFY LAST HOUR` and the V10 backlog count;
+- `Resolve + Verify` successfully classified/transcribed the RB10 Vision Test incident but resolution `enrich` attempts returned HTTP 422 and the UI showed `Resolution interpretation could not complete`.
+
+Exact runtime proof from manager production deployment `dpl_9ygz671ciZGXTfoDh6go9r7My77f`: `/api/intelligence` POST returned 422 at `08:19:31`, `08:21:07`, and `08:21:32` UTC while earlier classify/transcribe calls returned 200. Shared state revision 107 still contains the open RB10 event and was not damaged.
+
+Implementation being validated in the repo:
+- `lsc-v10-verification-ui.js`: the verification CTA only appears when action is required; labels are `1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, or pending-sync; no indicator when everything is complete. A MutationObserver immediately corrects legacy rerenders so no visible bounce remains.
+- `lsc-v10-resolution-guard.js`: keeps the exact existing `/api/intelligence` `enrich` call as primary. If that one call returns 422/network/invalid structured output during the Resolve + Verify screen, it performs a zero-model-call source-grounded fallback using only the operator statement, then feeds the result into the existing V8 human-confirmation/save workflow. No second provider, no second AI call, no new database.
+- Exact regression phrase under test: `They reset the vision system and we ran the four parts back through. They just reset it. It usually happens like this around midnight after midnight.` Expected safe interpretation: action = reset vision system; verification evidence = four parts rerun; recurrence signal = around/after midnight; root cause remains not established; verification remains recovered-not-permanent unless stronger evidence is stated.
+
+Next step for this WIP: pass V10 Acceptance + Handoff Guard, then promote only through the existing in-place workflow with live Vercel approval and verify the regular manager/mobile URLs plus the exact resolution regression scenario. Do not call it production-fixed before that passes.
