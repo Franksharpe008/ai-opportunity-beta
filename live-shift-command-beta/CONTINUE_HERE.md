@@ -1,179 +1,242 @@
 # LIVE SHIFT COMMAND — CONTINUE HERE FIRST
 
-> This file is the continuity contract for future chats and implementation sessions.
-> Do **not** ask Frank to retrain the project from scratch. Read this file, inspect the current branch/deployments, then continue from the exact next step.
+> This is the continuity contract. Do **not** ask Frank to retrain the project. Read this file, inspect the branch and live deployments, then continue from the exact next step.
 
-## Current version direction
+## Direction
 
-**V9 becomes V10.**
+**V9 becomes V10.** V9 is the working foundation, not a frozen sidecar. Preserve its production behavior while extending the same shared architecture.
 
-Do not treat V10 as a separate sidecar product. The working V9 workflow is the foundation of the V10 release. V10 must preserve the simple UI and all working V9 behavior while adding the new shared process-run/hourly evidence model and manager intelligence.
+Repo: `Franksharpe008/ai-opportunity-beta`
+Branch: `live-shift-command-v10-recovery`
+Draft PR: `#1`
+Never deploy stale `main` over the live CLI/prebuilt apps.
 
-## Repository / branch
+## Live / beta surfaces
 
-- Repo: `Franksharpe008/ai-opportunity-beta`
-- Active implementation branch: `live-shift-command-v10-recovery`
-- Never deploy stale `main` over the live apps.
-- Commit continuously as implementation progresses.
+### Existing manager production
+- `https://live-shift-command-v74.vercel.app`
+- project `live-shift-command-v74`
+- V9 functional baseline
 
-## Current live deployments
+### Existing mobile production / rollback point
+- `https://live-shift-command-v741-mobile.vercel.app`
+- project `live-shift-command-v741-mobile`
+- current V9 functional baseline
 
-### Manager web
-- Project: `live-shift-command-v74`
-- URL: `https://live-shift-command-v74.vercel.app`
-- Existing V9 behavior is the functional base being evolved into V10.
+### V10 mobile beta — LIVE
+- `https://live-shift-command-v10-mobile-beta.vercel.app`
+- project `live-shift-command-v10-mobile-beta`
+- first deployment `dpl_Eeda7oAZGMRFWou2Qrz1fgA8vfFn`
+- uses the exact existing mobile V8/V9 assets plus the recovery-branch V10 modules
+- server-side proxies `/api/state`, `/api/archive`, `/api/intelligence` to the existing shared production services
+- therefore this beta reads/writes the real shared plant state; it is not a mock
+- original mobile production URL remains untouched as rollback
+- smoke verified: deployment READY, root 200, state proxy 200, V10 floor-ops asset 200 JS, no Vercel runtime errors
 
-### Mobile operator cockpit
-- Project: `live-shift-command-v741-mobile`
-- URL: `https://live-shift-command-v741-mobile.vercel.app`
-- Existing V9 mobile behavior is the functional base being evolved into V10.
+## Shared plant truth
 
-### Shift Roster
-- Separate project/repository surface.
-- **Do not modify Shift Roster during this phase.**
+Timezone: `America/Chicago`
+Operating day: 07:00 → 06:59:59 next calendar day
+Plant shifts:
+- First 07:00–15:00
+- Second 15:00–23:00
+- Third 23:00–07:00
 
-## V9 capabilities that V10 must retain
+Detached process schedules include:
+- Opal Assembly Day 07:00–15:40
+- Opal Assembly Night 19:00–03:40
 
-- Live Now manager view
-- Shared manager/mobile state
-- three-shift hot memory / 24-hour continuity
-- permanent Calendar Memory
-- plant operating day 07:00 → 06:59:59 America/Chicago
-- correct Third Shift cross-midnight attribution
-- effective-dated plant shift schedules
-- detached process schedules, especially Opal Assembly Day / Night
-- schedule context stamped onto events
-- cause / 4M separated from originating function
-- recovery ownership separated from cause/origin
-- hybrid / multi-team responders
-- response timestamps and recovery stages
-- scrap / rework quality evidence
-- Shift Recall
-- previous-shift continuity
-- immediate End Shift archive behavior
-- evidence-first manager intelligence
-- meeting / operating brief workflow
-- existing downtime code dictionaries
-- mobile floor workflow and simple UI
-- web manager workflow and simple UI
+A process run may cross a plant-shift boundary. The run remains continuous while every event/hour keeps the plant-shift accountability that owned that moment.
 
-## V10 additions being integrated into the same workflow
+## V9 behavior V10 must preserve
 
-### Shared web + mobile data model
-- `processProduction[]` on the shift record
-- process/run identity
-- plant shift context
-- schedule version context
-- operating/work date
-- Chicago plant-hour timestamp
-- evidence note/source
-- missing Actual remains missing, never silently becomes zero
-- generic shift Actual is never redistributed into process Actual
-- Scrap / Rework remains in the existing quality workflow so it is not double counted
+- shared manager/mobile `/api/state`
+- Live Now
+- three-shift hot memory
+- permanent Calendar Memory/archive
+- effective-dated schedules
+- Third Shift cross-midnight attribution
+- detached process schedule identity
+- all downtime codes
+- 4M cause model
+- originating function / recovery ownership separation
+- multi-team responders and timing
+- voice/photo/type evidence
+- existing `/api/intelligence` classify/enrich/vision/quality/copilot/transcribe path
+- Scrap/Rework quality workflow
+- Resolve + Verify
+- Shift Recall / prior-shift continuity
+- End Shift archive
+- manager operating intelligence
 
-### Mobile V10 responsibilities
-Keep the phone simple and floor-focused:
-- show current process/run context
-- capture process-level Good Actual
-- downtime / quality / evidence workflow stays intact
-- responders / verification stay intact
-- Shift Recall / continuity stays intact
-- mobile events update the same shared state the web reads
-- mobile does **not** get the full plant-wide capacity dashboard
-- mobile does **not** get authority to change manager configuration/rules
+## V10 data / floor additions now implemented
 
-### Manager web V10 responsibilities
+### `processProduction[]`
+Supplemental process/run/hour evidence. Generic shift Actual is never redistributed into it. Missing Actual remains missing. Same process/run/hour is upserted with correction history instead of double-counted.
+
+### Time Truth
+New floor layer: `continuation-v10/lsc-v10-floor-ops.js`
+
+Downtime now supports actual-vs-recorded time:
+- Started Now
+- Started Earlier
+- Correct Start Time
+- Restored Now through existing V8 Resolve + Verify
+- Restored Earlier, then existing Resolve + Verify
+
+Stored/audited fields include as applicable:
+- `startedAt` / `occurredAt`
+- `endedAt` / `restoredAt`
+- `recordedAt` / `reportedAt`
+- `closedRecordedAt`
+- `timeSource.start/end`
+- `retroactive.start/end`
+- process-run / plant-shift / schedule context based on the actual event time
+
+The event duration is based on actual equipment stop/restoration time, not when the supervisor happened to open the app.
+
+### Change attribution
+Do not clutter the floor UI with user identity yet.
+
+Beta mutations write hidden audit metadata using plant shift as actor:
+- `First Shift`
+- `Second Shift`
+- `Third Shift`
+
+Shape:
+`{ mode:'shift_beta', shift:'Third Shift', actorId:'third_shift', userId:null }`
+
+Events/process records can carry `changedBy`, `changedAt`, `audit[]`; current shift carries hidden audit history. Later authenticated users can fill `userId` / person identity without changing historical schema.
+
+### Hour Truth
+Mobile now has **VERIFY LAST HOUR** for the selected process.
+
+Verified hourly record includes:
+- process/run/hour
+- hourly goal
+- Good Actual
+- Scrap
+- Rework
+- linked downtime events overlapping that hour
+- `verified:true`
+- verification timestamp
+- shift-level beta actor
+- correction history
+
+`current.hourVerification[]` is also written.
+
+Hourly Scrap/Rework is production accounting evidence only. Existing quality events remain authoritative for defect/root-cause/containment intelligence so quality is not double-counted.
+
+### Multi-line mobile navigation
+Mobile Process / Run card now lets the supervisor move among:
+- Opal Lamination
+- Opal Edge Wrap
+- Opal Assembly
+- Wetline
+- E41
+- Injection Molding
+
+Selecting a line does **not** change plant shift. Each selected line shows its run identity, DOWN/RUN/DETACHED status, line downtime/manage action, Process Actual, Verify Last Hour, and AI Command.
+
+Detached Opal Assembly Night remains one continuous process run while Second/Third ownership is stamped by event/hour time.
+
+### Manager-controlled Company Goal
+Mobile removes goal editing. Manager config is authoritative. The beta mobile KPI/start form displays `state.config.shiftGoal` even if an older active shift record contains a stale legacy shiftGoal. Historical raw shift values are not silently rewritten.
+
+## Bounded AI operational control
+
+The prior rule “AI never directly changes production state” is superseded by this more precise contract:
+
+**AI may execute bounded operational evidence mutations only when an authorized supervisor gives an explicit instruction and the deterministic V10 command layer validates the mutation.**
+
+AI interprets language. Deterministic code owns:
+- plant time conversion
+- operating day
+- plant shift
+- process run
+- schedule version
+- duration
+- record key/upsert behavior
+- audit attribution
+- validation
+
+Current executable commands include:
+- record/backdate downtime
+- restore/backdate downtime end
+- verify completed process hour Good/Scrap/Rework
+
+Examples:
+- “Wetline stopped at 1:17 and was back up at 1:46. RB08.”
+- “Wetline did 29 good last hour, one scrap and two rework.”
+
+If a downtime code is omitted, the existing `/api/intelligence` classify task is reused. Voice command uses the existing transcribe task. No second AI provider exists.
+
+The UI shows the interpreted command before `EXECUTE VERIFIED COMMAND`.
+
+AI still cannot autonomously change:
+- company goal/rate
+- schedules/effective schedule versions
+- authority roles
+- permanent archive deletion
+- capacity recommendation into configuration
+
+## Manager V10
+
+Manager additions already implemented on branch:
 - Calendar Day Reconstruction
 - shift → process run → hour → evidence
-- process Actual visibility
-- cross-shift demonstrated rate comparison
-- weak-shift identification
-- downtime / quality / remaining rate loss decomposition
-- 4M Pareto, with optional 6M extension when useful
-- drilldown: rate opportunity → shift comparison → loss/4M Pareto → incidents/evidence/actions/verification
-- capacity decision states: `HOLD`, `INVESTIGATE`, `TRIAL HIGHER RATE`
-- higher-rate recommendation requires trustworthy evidence across all three shifts
-- no automatic write to company target/rate
+- process Actual
+- cross-shift rate/capacity intelligence
+- weak-shift detection
+- downtime / quality / rate loss
+- 4M Pareto + optional manager-only Measurement/Environment refinement
+- opportunity → shift → loss/Pareto → incident/action/verification drilldown
+- `HOLD`, `INVESTIGATE`, `TRIAL HIGHER RATE`
+- existing Morning Meeting Brief upgraded in place
 
-## Manager Operating Brief structure
+Brief order remains:
+STATUS → WHAT HAPPENED → WHAT CHANGED → WHAT REPEATED → WHAT WORKED → OPPORTUNITY → RESPONSE → MANAGEMENT ATTENTION → PROOF.
 
-Always preserve this order:
+## Current real data / capacity
 
-1. STATUS
-2. WHAT HAPPENED
-3. WHAT CHANGED
-4. WHAT REPEATED
-5. WHAT WORKED
-6. OPPORTUNITY
-7. RESPONSE
-8. MANAGEMENT ATTENTION
-9. PROOF
+At last verified check the correct capacity state is `HOLD / BUILDING` because cross-shift trustworthy hourly Actual is still sparse. Untouched legacy zero rows and missing Actual are excluded.
 
-## AI contract
+At the V10 mobile beta smoke check, shared state was revision `96`, schema still `live-shift-command/v7.9` because simply opening V10 does not migrate/write state. A confirmed V10 operational mutation performs the schema upgrade.
 
-- cloud / edge only
-- advisory only
-- never delegate deterministic shift math to AI
-- never let AI directly change production state, schedules, company goal or rate
-- retrieve authoritative downtime codes from state/config
-- classify informal plant language and downtime codes
-- support negation
-- structured extraction / JSON
-- summarize recurrence and maintenance actions
-- distinguish temporary recovery from verified resolution
-- insufficient-evidence handling
-- confidence calibration
-- human approval before consequential operational changes
-- Cloudflare Workers AI connectivity was already verified with `@cf/qwen/qwen3.8-27b`; full Live Shift integration/acceptance remains to be completed
+Config Company Goal is `400`; the current Third Shift record was previously created with legacy `shiftGoal:265`. V10 mobile displays manager config 400 and does not rewrite historical raw records just for display.
 
-## Current V10 implementation assets
+## Tests / release safety
 
-Under `live-shift-command-beta/continuation-v10/`:
-- `lsc-v10-core.js`
-- `lsc-v10-ui.js`
-- `lsc-v10-capacity.js`
-- `lsc-v10-capacity-ui.js`
-- `lsc-v10-brief.js`
-- V10 CSS files
-- acceptance tests
-- `STATUS.md`
-- `INTEGRATION.md`
+GitHub Actions `Live Shift V10 Acceptance` covers:
+- syntax for all V10 modules
+- core process/run behavior
+- capacity decisions
+- operating brief
+- non-overlap/authority contract
+- floor-ops retro start/end + hourly verification + Third Shift audit
+- idempotent V10 release builder
+- guard against manager intelligence writing rate/goal
 
-These are implementation pieces to be merged into the actual V10 release built from the live V9 web/mobile source.
+Run #74 on head `c69d620f8fc4ff0115cd40606604719de34561d1` passed every step before the manager-goal display-only patch; rerun CI after any subsequent branch update.
 
-## Current real-data capacity interpretation
+## Exact next step
 
-At the last verified archive check the correct state was:
+1. Re-run acceptance on latest head.
+2. Open V10 mobile beta on an actual phone and smoke the UI without fabricating plant data.
+3. Use a real event/hour when available to prove: retrofit start/end → shared state → hidden shift audit → manager reconstruction.
+4. Stand up manager V10 beta against the same shared APIs, keeping manager production untouched.
+5. Verify mobile Process Actual / verified hour appears in manager Day Reconstruction and capacity context.
+6. On a real completed V10 shift, prove `processProduction[]` and audit fields survive End Shift → permanent archive → Calendar reconstruction.
+7. Only then coordinate production promotion. Keep old mobile/manager deployments available for immediate rollback.
 
-`HOLD / BUILDING`
-
-Reason: not enough trustworthy cross-shift hourly Actual exists yet. Legacy untouched zero rows and missing Actual are intentionally excluded. This is an evidence-quality guardrail, not a negative performance judgment.
-
-## Exact continuation step
-
-**Build the actual V10 release from the live V9 manager + mobile deployments.**
-
-1. Recover the current live V9 web and mobile assets.
-2. Change the release schema/version to V10 while preserving backward-compatible state.
-3. Merge V9 schedule/accountability/memory behavior and V10 shared process-run/hourly logic into the actual V10 command layer.
-4. Wire the simple mobile process/run context + Process Actual capture into the existing mobile cockpit.
-5. Wire Calendar Reconstruction + capacity intelligence + Operating Brief into the existing manager web UI.
-6. Verify manager configuration still propagates through shared state and mobile cannot edit manager-only configuration.
-7. Verify mobile events and Process Actual propagate back to web.
-8. Verify `processProduction[]` survives End Shift → server archive → Calendar reconstruction.
-9. Run all V10 acceptance tests and regression-check V9 behaviors.
-10. Create a preview deployment first; only promote when the complete integrated V10 passes.
-
-## Non-negotiable rules
+## Non-negotiables
 
 - No clean-slate rewrite.
-- No fake simulation data/language.
-- No invented Actual.
-- No silent null→zero conversion.
-- No duplicated Scrap/Rework totals.
-- Do not simplify by deleting working intelligence.
-- Keep UI simple even as intelligence grows.
-- One source of truth between mobile and web.
+- No fake plant data just to make dashboards look populated.
+- No silent null→zero.
+- No double-counted quality.
+- No duplicate downtime/AI/provider/config systems.
 - Manager rules flow down; floor evidence flows up.
-- Shift Roster stays untouched until the later integration phase.
-- Every meaningful implementation checkpoint gets committed and this file gets updated before a long chat ends.
+- Keep mobile simple even as ledger intelligence grows.
+- Shift Roster stays separate and untouched.
+- Update this handoff at every meaningful checkpoint.
