@@ -1,0 +1,15 @@
+name: Deprecated Live Shift V10 Promotion Path
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deprecated:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse obsolete promotion path
+        run: |
+          echo 'This workflow is intentionally disabled for deployment.'
+          echo 'It previously rewrote production APIs toward protected immutable deployments and is preserved only as a tombstone.'
+          echo 'Use Live Shift V10 In-Place Production after acceptance and handoff checks.'
+          exit 1

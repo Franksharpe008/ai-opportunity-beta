@@ -1,0 +1,21 @@
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.join(__dirname,'..'),src=fs.readFileSync(path.join(root,'tools','prepare-inplace-production.mjs'),'utf8');
+assert(src.includes("MANAGER_LIVE='https://live-shift-command-v74.vercel.app'"));
+assert(src.includes("MOBILE_LIVE='https://live-shift-command-v741-mobile.vercel.app'"));
+assert(src.includes("MANAGER_V9='https://live-shift-command-v74-jd65bh7ol-franksharpe008s-projects.vercel.app'"));
+assert(src.includes('writeProtectedManagerApi(managerOut)'));
+assert(src.includes('writeMobileApi(mobileOut)'));
+assert(src.includes("apiFunction(n,MANAGER_LIVE,false)"));
+assert(src.includes('materializeBase(MANAGER_LIVE,managerOut,BASE_MANAGER)'));
+assert(src.includes('materializeBase(MOBILE_LIVE,mobileOut,BASE_MOBILE)'));
+assert(src.includes("text(`${live}/${encodeURIComponent(name)}`)"));
+assert(!src.includes("text(`${live}/api/base?file=${encodeURIComponent(name)}`)"));
+assert(src.includes('localizeBaseRefs'));
+assert(!src.includes('writeBase('));
+for(const asset of ['lsc-v10-standards.js','lsc-v10-ai-world.js','lsc-v10-ai-reliability.js','lsc-v10-resolution-guard.js','lsc-v10-hourly-performance.js','lsc-v10-hourly-performance.css','lsc-v10-verification-queue.js','lsc-v10-verification-ui.js','lsc-v10-line-context.js','lsc-v10-reporting.js','lsc-v10-manager-warroom.js'])assert(src.includes(`'${asset}'`),`missing production asset ${asset}`);
+function ordered(listName,names){const start=src.indexOf(`${listName}=[`);assert(start>=0,`${listName} missing`);let last=start;for(const name of names){const at=src.indexOf(`'${name}'`,start);assert(at>last,`${name} must load after the prior protected layer in ${listName}`);last=at}}
+ordered('MOBILE_V10_JS',['lsc-v10-core.js','lsc-v10-standards.js','lsc-v10-ai-world.js','lsc-v10-ai-reliability.js','lsc-v10-resolution-guard.js','lsc-v10-line-context.js','lsc-v10-reporting.js']);
+ordered('MANAGER_V10_JS',['lsc-v10-core.js','lsc-v10-standards.js','lsc-v10-ai-world.js','lsc-v10-ai-reliability.js','lsc-v10-resolution-guard.js','lsc-v10-reporting.js','lsc-v10-manager-warroom.js']);
+assert(src.includes("projectId:ORG")===false);
+assert(src.includes("projectId},null,2"));
+console.log('V10 DEPLOYMENT CONTRACT: PASS · static shell + shared brain + standards + reporting + ECC preserved');

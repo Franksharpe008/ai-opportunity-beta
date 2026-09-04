@@ -1,0 +1,160 @@
+name: Live Shift V10 In-Place Production
+
+on:
+  push:
+    branches:
+      - live-shift-command-v10-recovery
+    paths:
+      - 'live-shift-command-beta/continuation-v10/**'
+      - '.github/workflows/live-shift-v10-production.yml'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: live-shift-v10-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: contains(github.event.head_commit.message, '[deploy-v10-production]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: live-shift-command-beta/continuation-v10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run V10 acceptance
+        run: node tests/run-v10-acceptance.js
+      - name: Build safe in-place releases from current production shell
+        run: node tools/prepare-inplace-production.mjs
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Authenticate Vercel
+        id: vercel_auth
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "::add-mask::$VERCEL_TOKEN"
+            echo "token=$VERCEL_TOKEN" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CLIENT_ID='cl_HYyOPBNtFMfHhaUn9L4QPfTZz6TP47bp'
+          DISCOVERY=$(curl -fsSL https://vercel.com/.well-known/openid-configuration)
+          DEVICE_ENDPOINT=$(printf '%s' "$DISCOVERY" | jq -r '.device_authorization_endpoint')
+          TOKEN_ENDPOINT=$(printf '%s' "$DISCOVERY" | jq -r '.token_endpoint')
+          DEVICE=$(curl -fsSL -X POST "$DEVICE_ENDPOINT" -H 'Content-Type: application/x-www-form-urlencoded' --data-urlencode "client_id=$CLIENT_ID" --data-urlencode 'scope=openid offline_access')
+          DEVICE_CODE=$(printf '%s' "$DEVICE" | jq -r '.device_code')
+          USER_CODE=$(printf '%s' "$DEVICE" | jq -r '.user_code')
+          VERIFY_URL=$(printf '%s' "$DEVICE" | jq -r '.verification_uri_complete')
+          INTERVAL=$(printf '%s' "$DEVICE" | jq -r '.interval // 5')
+          EXPIRES=$(printf '%s' "$DEVICE" | jq -r '.expires_in // 600')
+          test -n "$DEVICE_CODE" && test "$DEVICE_CODE" != null
+          test -n "$VERIFY_URL" && test "$VERIFY_URL" != null
+          {
+            echo '### Vercel approval required'
+            echo 'Approve this device login to deploy the already-tested V10 build directly to the EXISTING Live Shift Command manager and mobile projects.'
+            echo
+            echo "**Approve:** $VERIFY_URL"
+            echo
+            echo "Device code: \`$USER_CODE\`"
+          } > /tmp/vercel-comment.md
+          gh pr comment 1 --body-file /tmp/vercel-comment.md
+          DEADLINE=$(( $(date +%s) + EXPIRES )); SLEEP="$INTERVAL"
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            RESP=$(curl -sS -X POST "$TOKEN_ENDPOINT" -H 'Content-Type: application/x-www-form-urlencoded' --data-urlencode "client_id=$CLIENT_ID" --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:device_code' --data-urlencode "device_code=$DEVICE_CODE")
+            ACCESS=$(printf '%s' "$RESP" | jq -r '.access_token // empty')
+            if [ -n "$ACCESS" ]; then echo "::add-mask::$ACCESS"; echo "token=$ACCESS" >> "$GITHUB_OUTPUT"; exit 0; fi
+            ERR=$(printf '%s' "$RESP" | jq -r '.error // empty')
+            case "$ERR" in authorization_pending|'') sleep "$SLEEP" ;; slow_down) SLEEP=$((SLEEP+5)); sleep "$SLEEP" ;; *) echo "Vercel authorization failed: $ERR"; exit 1 ;; esac
+          done
+          echo 'Vercel device approval expired.'; exit 1
+      - name: Deploy manager to existing project first
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ steps.vercel_auth.outputs.token }}
+        run: |
+          cd dist-inplace/manager
+          vercel deploy --prod --yes --token "$DEPLOY_TOKEN"
+      - name: Verify manager authority before mobile promotion
+        run: |
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/api/state >/tmp/manager-before-mobile.json
+          curl --retry 5 --retry-all-errors -fsSL 'https://live-shift-command-v74.vercel.app/api/archive?action=calendar&date=2026-09-03&include=shifts' >/dev/null
+      - name: Deploy mobile to existing project second
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ steps.vercel_auth.outputs.token }}
+        run: |
+          cd dist-inplace/mobile
+          vercel deploy --prod --yes --token "$DEPLOY_TOKEN"
+      - name: Smoke same production URLs and shared brain — no paid AI POST
+        run: |
+          set -euo pipefail
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/ >/tmp/manager.html
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/ >/tmp/mobile.html
+          grep -q 'lsc-v10-ai-world.js' /tmp/manager.html
+          grep -q 'lsc-v10-ai-world.js' /tmp/mobile.html
+          grep -q 'lsc-v10-ai-reliability.js' /tmp/manager.html
+          grep -q 'lsc-v10-ai-reliability.js' /tmp/mobile.html
+          grep -q 'lsc-v10-resolution-guard.js' /tmp/manager.html
+          grep -q 'lsc-v10-resolution-guard.js' /tmp/mobile.html
+          grep -q 'lsc-v10-manager-warroom.js' /tmp/manager.html
+          grep -q 'lsc-v10-manager-live-floor.js' /tmp/manager.html
+          grep -q 'lsc-v10-hourly-performance.js' /tmp/mobile.html
+          grep -q 'lsc-v10-hourly-performance.css' /tmp/mobile.html
+          grep -q 'lsc-v10-verification-queue.js' /tmp/manager.html
+          grep -q 'lsc-v10-verification-queue.js' /tmp/mobile.html
+          grep -q 'lsc-v10-verification-ui.js' /tmp/mobile.html
+          grep -q 'href="/style.css"' /tmp/manager.html
+          grep -q 'href="/style.css"' /tmp/mobile.html
+          grep -q 'src="/lsc-command-v9.js"' /tmp/mobile.html
+          if grep -q '/api/base?file=' /tmp/manager.html || grep -q '/api/base?file=' /tmp/mobile.html; then echo 'browser asset bridge still present'; exit 1; fi
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/style.css >/tmp/mobile-style.css
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-command-v9.js >/tmp/mobile-v9.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-mobile.js >/tmp/mobile-v10.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-hourly-performance.js >/tmp/mobile-hourly.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-verification-queue.js >/tmp/mobile-verify.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-verification-ui.js >/tmp/mobile-verify-ui.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-resolution-guard.js >/tmp/mobile-resolution-guard.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-ai-reliability.js >/tmp/mobile-ai-reliability.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-ai-world.js >/tmp/manager-ai-world.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-ai-reliability.js >/tmp/manager-ai-reliability.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-resolution-guard.js >/tmp/manager-resolution-guard.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-manager-live-floor.js >/tmp/manager-live-floor.js
+          grep -q ':root' /tmp/mobile-style.css
+          grep -q 'Live Shift Command V9' /tmp/mobile-v9.js
+          grep -q 'lsc-v10-mobile-1.3.2' /tmp/mobile-v10.js
+          grep -q 'view-only animated telemetry' /tmp/manager-live-floor.js
+          ! grep -q 'VERIFY LAST HOUR' /tmp/mobile-v10.js
+          ! grep -q 'LAST HOUR VERIFIED' /tmp/mobile-v10.js
+          grep -q 'zero background AI' /tmp/mobile-hourly.js
+          grep -q 'offline outbox' /tmp/mobile-verify.js
+          grep -q 'backlog indicator only when action is required' /tmp/mobile-verify-ui.js
+          grep -q '422/network-safe source-grounded closeout' /tmp/mobile-resolution-guard.js
+          grep -q '422/network-safe source-grounded closeout' /tmp/manager-resolution-guard.js
+          grep -q 'ECC real-AI-first' /tmp/mobile-ai-reliability.js
+          grep -q 'zero second model call' /tmp/mobile-ai-reliability.js
+          grep -q 'ECC real-AI-first' /tmp/manager-ai-reliability.js
+          grep -q 'zero second model call' /tmp/manager-ai-reliability.js
+          grep -q 'zero autonomous model calls' /tmp/manager-ai-world.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/api/state >/tmp/manager-state.json
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/api/state >/tmp/mobile-state.json
+          curl --retry 5 --retry-all-errors -fsSL 'https://live-shift-command-v74.vercel.app/api/archive?action=calendar&date=2026-09-03&include=shifts' >/tmp/manager-archive.json
+          curl --retry 5 --retry-all-errors -fsSL 'https://live-shift-command-v741-mobile.vercel.app/api/archive?action=calendar&date=2026-09-03&include=shifts' >/tmp/mobile-archive.json
+          test "$(curl -s -o /tmp/mi.json -w '%{http_code}' https://live-shift-command-v74.vercel.app/api/intelligence)" = '405'
+          test "$(curl -s -o /tmp/mo.json -w '%{http_code}' https://live-shift-command-v741-mobile.vercel.app/api/intelligence)" = '405'
+          node - <<'NODE'
+          const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/manager-state.json','utf8')),b=JSON.parse(fs.readFileSync('/tmp/mobile-state.json','utf8')),ma=JSON.parse(fs.readFileSync('/tmp/manager-archive.json','utf8')),mb=JSON.parse(fs.readFileSync('/tmp/mobile-archive.json','utf8'));
+          if(!a.state||!b.state)throw Error('shared state missing');if(a.revision!==b.revision)throw Error(`revision mismatch ${a.revision} vs ${b.revision}`);if(!ma.ok||!mb.ok)throw Error('archive unhealthy');console.log(`SAFE V10 PROMOTION VERIFIED · shared revision ${a.revision} · static assets · manager live-floor telemetry + premium verification CTA + resolution guard + AI reliability loaded · no paid AI inference used by smoke`);
+          NODE

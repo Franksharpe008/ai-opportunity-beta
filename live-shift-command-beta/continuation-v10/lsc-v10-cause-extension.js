@@ -1,0 +1,15 @@
+/* Live Shift Command V10 — optional 6M cause refinement */
+(()=>{'use strict';
+if(!document.getElementById('events'))return;
+const V='lsc-v10-cause-extension-1.0.0',EXT=['Measurement','Environment'];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cur=()=>state?.current||null;
+function eventById(id){return(cur()?.events||[]).find(e=>e.id===id)}
+async function setExtension(id,dimension,note=''){if(dimension&&!EXT.includes(dimension))throw new Error('invalid_extension');await update(x=>{const e=(x.current?.events||[]).find(z=>z.id===id);if(!e)return;e.causeDimensionExtension=dimension||null;e.causeFramework=dimension?'6M':'4M';e.causeExtensionNote=note||null;e.updatedAt=new Date().toISOString();x.current.updatedAt=e.updatedAt})}
+function openExtension(id){const e=eventById(id);if(!e)return;show('Cause Dimension',`<div class="v10-form"><p class="v10-help">Keep the existing 4M classification as the canonical code mapping. Use a 6M extension only when evidence specifically points to Measurement or Environment.</p><div class="v10-run-context"><small>CANONICAL 4M</small><b>${esc(e.fourM||e.causeDimension||'Unknown')}</b><span>${esc(e.issueCode||'')} · ${esc(e.reason||'Downtime')}</span></div><label>Optional 6M extension<select id="v10CauseExt"><option value="">None · stay 4M</option>${EXT.map(x=>`<option ${e.causeDimensionExtension===x?'selected':''}>${x}</option>`).join('')}</select></label><label>Evidence note<textarea id="v10CauseExtNote" placeholder="Why Measurement or Environment is the better extended dimension">${esc(e.causeExtensionNote||'')}</textarea></label><button class="v10-primary" id="v10SaveCauseExt">SAVE CAUSE DIMENSION</button></div>`,'MANAGER ROOT-CAUSE REFINEMENT');document.getElementById('v10SaveCauseExt').onclick=async()=>{const d=document.getElementById('v10CauseExt').value||null,n=document.getElementById('v10CauseExtNote').value.trim();await setExtension(id,d,n);try{modal.close()}catch{}if(typeof activeModal==='function')setTimeout(()=>activeModal(id),50)}}
+function activeIdForAccountability(){const open=(cur()?.events||[]).filter(e=>e.type==='downtime'&&!e.endedAt);if(open.length===1)return open[0].id;const box=document.getElementById('v9Accountability');if(!box)return null;const text=box.textContent||'';return open.find(e=>text.includes(e.issueCode||'__none__'))?.id||null}
+function install(){const box=document.getElementById('v9Accountability');if(!box||document.getElementById('v10CauseExtensionBtn'))return;const id=activeIdForAccountability();if(!id)return;const e=eventById(id),label=e?.causeDimensionExtension?`6M: ${e.causeDimensionExtension}`:'OPTIONAL 6M';box.insertAdjacentHTML('beforeend',`<button class="v9-btn" id="v10CauseExtensionBtn">${esc(label)}</button>`);document.getElementById('v10CauseExtensionBtn').onclick=()=>openExtension(id)}
+window.LSC_V10_SET_CAUSE_EXTENSION=setExtension;
+setInterval(install,600);install();
+console.info(`[LSC] ${V} active · 4M canonical + optional Measurement/Environment refinement`);
+})();

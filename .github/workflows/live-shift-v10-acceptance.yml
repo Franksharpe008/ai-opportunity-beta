@@ -1,0 +1,53 @@
+name: Live Shift V10 Acceptance
+
+on:
+  push:
+    branches:
+      - live-shift-command-v10-recovery
+    paths:
+      - 'live-shift-command-beta/continuation-v10/**'
+      - '.github/workflows/live-shift-v10-acceptance.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'live-shift-command-beta/continuation-v10/**'
+      - '.github/workflows/live-shift-v10-acceptance.yml'
+  workflow_dispatch:
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: live-shift-command-beta/continuation-v10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check V10 modules
+        run: |
+          node --check lsc-v10-core.js
+          node --check lsc-v10-ai-world.js
+          node --check lsc-v10-mobile.js
+          node --check lsc-v10-floor-ops.js
+          node --check lsc-v10-hourly-performance.js
+          node --check lsc-v10-ui.js
+          node --check lsc-v10-cause-extension.js
+          node --check lsc-v10-capacity.js
+          node --check lsc-v10-capacity-ui.js
+          node --check lsc-v10-brief.js
+          node --check tools/build-v10-release.mjs
+
+      - name: Run V10 acceptance suite
+        run: node tests/run-v10-acceptance.js
+
+      - name: Guard manager intelligence from writing company rate
+        run: |
+          ! grep -R "config\.mesRate\s*=" lsc-v10-capacity.js lsc-v10-capacity-ui.js lsc-v10-brief.js
+          ! grep -R "shiftGoal\s*=" lsc-v10-capacity.js lsc-v10-capacity-ui.js lsc-v10-brief.js

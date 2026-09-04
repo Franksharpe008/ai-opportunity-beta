@@ -1,0 +1,12 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+global.document={getElementById:id=>id==='events'?{}:null};global.window=global;global.state={config:{mesRate:40.5,shiftGoal:400},history:[],current:null};
+vm.runInThisContext(fs.readFileSync(require('path').join(__dirname,'..','lsc-v10-capacity.js'),'utf8'));
+const E=window.LSC_V10_CAPACITY_ENGINE;
+function shift(label,n,rate){const good=Math.round(rate);return{id:`${label}-${n}`,label,status:'complete',workDate:`2026-08-${String(20+n).padStart(2,'0')}`,start:'2026-08-20T12:00:00Z',actualEnd:'2026-08-20T20:00:00Z',durationHours:8,mesRate:40.5,hourlyTargets:[40.5,40.5,40.5,40.5],production:Array.from({length:4},(_,i)=>({good,updatedAt:`2026-08-20T1${i}:05:00Z`})),events:[]}}
+let rows=[];for(const l of ['First Shift','Second Shift','Third Shift'])for(let n=0;n<2;n++)rows.push(shift(l,n,44+n));let s=E.build(rows);assert.equal(s.decision.decision,'TRIAL HIGHER RATE');assert(s.decision.suggestedRate>40.5);
+rows=[];for(const l of ['First Shift','Second Shift'])for(let n=0;n<2;n++)rows.push(shift(l,n,44));for(let n=0;n<2;n++)rows.push(shift('Third Shift',n,32));s=E.build(rows);assert.equal(s.decision.decision,'INVESTIGATE');assert.equal(s.decision.weakShift,'Third Shift');
+rows=[shift('First Shift',0,44),shift('Second Shift',0,43),shift('Third Shift',0,42)];s=E.build(rows);assert.equal(s.decision.decision,'HOLD');assert.equal(s.decision.confidence,'BUILDING');
+const nullShift=shift('First Shift',9,44);nullShift.production=nullShift.production.map(()=>({good:null,updatedAt:null}));assert.equal(E.shiftEvidence(nullShift,40.5),null);
+const zeroDefault=shift('First Shift',10,44);zeroDefault.production=zeroDefault.production.map(()=>({good:0,updatedAt:null}));assert.equal(E.shiftEvidence(zeroDefault,40.5),null);
+const causeShift=shift('Third Shift',12,40);causeShift.events=[{type:'downtime',startedAt:'2026-08-20T13:00:00Z',endedAt:'2026-08-20T13:10:00Z',issueCode:'FT01',fourM:'Method',causeDimensionExtension:'Measurement',verificationStatus:'verified_permanent'}];const p=E.pareto([causeShift]);assert.equal(p[0].dimension,'Measurement');assert.equal(p[0].framework,'6M');assert.equal(p[0].canonical4M,'Method');
+console.log('V10 CAPACITY ACCEPTANCE: PASS');
