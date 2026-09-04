@@ -1,9 +1,9 @@
 /* Live Shift Command V10 — AI reliability: real AI first, live-data fallback, zero second model call */
 (()=>{'use strict';
 if(window.__lscV10AiReliability||typeof window.fetch!=='function')return;window.__lscV10AiReliability=true;
-const V='lsc-v10-ai-reliability-1.0.0';
+const V='lsc-v10-ai-reliability-1.0.1';
 const upstream=window.fetch.bind(window),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const num=x=>x!=null&&x!==''&&Number.isFinite(+x)?+x:null,cur=()=>window.state?.current||null,goal=()=>Math.max(0,+window.state?.config?.shiftGoal||400);
+const num=x=>x!=null&&x!==''&&Number.isFinite(+x)?+x:null,stateRef=()=>typeof state!=='undefined'?state:(window.state||null),cur=()=>stateRef()?.current||null,goal=()=>Math.max(0,+stateRef()?.config?.shiftGoal||400);
 let copilotRequests=0;
 function totals(s=cur()){return(s?.production||[]).reduce((a,p)=>{const g=num(p?.good);if(g!=null){a.actual+=g;a.known++}a.scrap+=+p?.scrap||0;a.rework+=+p?.rework||0;return a},{actual:0,known:0,scrap:0,rework:0})}
 function downMinutes(s=cur()){if(!s?.start)return 0;const st=+new Date(s.start),en=Math.min(Date.now(),+new Date(s.actualEnd||s.plannedEnd||Date.now())),ints=(s.events||[]).filter(e=>e.type==='downtime'&&e.startedAt).map(e=>[Math.max(st,+new Date(e.startedAt)),Math.min(en,+new Date(e.endedAt||Date.now()))]).filter(([a,b])=>b>a).sort((a,b)=>a[0]-b[0]);if(!ints.length)return 0;let [a,b]=ints[0],sum=0;for(let i=1;i<ints.length;i++){const [x,y]=ints[i];if(x<=b)b=Math.max(b,y);else{sum+=b-a;[a,b]=[x,y]}}return Math.round((sum+b-a)/6000)/10}
