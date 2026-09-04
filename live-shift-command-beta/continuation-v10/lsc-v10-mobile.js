@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const mobile=!!document.querySelector('[data-action="start-stop"]');if(!mobile)return;
 const C=window.LSC_V10_CORE;if(!C)return console.warn('[LSC V10 Mobile] core missing');
-const V='lsc-v10-mobile-1.3.2',AREA_KEY='lsc-v10-mobile-area';
+const V='lsc-v10-mobile-1.3.1',AREA_KEY='lsc-v10-mobile-area';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const cur=()=>state?.current||null;
 const areaList=()=>state?.config?.areas||window.AREAS||[];
