@@ -1,24 +1,21 @@
 # V10 Production Release Marker
 
-Repair feature commit: `71ff4f2cb049c8eb8aad3a52c19e127f85e09bac`
-Production smoke-hardening commit: `5cc4d68db6add03c247302b6bf0faf471197b8f0`
+Premium verification CTA source fix: `9d45dc82fb2299291c706f02e41a18c08805e27d`
+Verification UI regression test: `a5f05bad9173d9a474a65a2ede28ac1dd465688c`
+Integration-contract correction: `44675694b433f3c8957a24e4fc37fc6c07f07460`
+Current handoff head: `eb5e2a4980a27545183c8b97d39ac71be5d5c510`
 
 Validated before promotion:
-- Live Shift V10 Acceptance push run `33855407932`: SUCCESS
-- Live Shift V10 Acceptance PR run `33855412983`: SUCCESS
-- Live Shift Handoff Guard push run `33855407861`: SUCCESS
-- Live Shift Handoff Guard PR run `33855412962`: SUCCESS
-- Current-head smoke-hardening Acceptance PR run `33855797385`: SUCCESS
-- Current-head Handoff Guard PR run `33855797425`: SUCCESS
+- Live Shift V10 Acceptance run `33859323901`: SUCCESS
+- Live Shift Handoff Guard run `33859323924`: SUCCESS
 
 Release scope:
-- eliminate visible legacy `VERIFY LAST HOUR` / V10 backlog-label bounce;
-- show verification CTA only when completed hours actually require verification or pending sync;
-- preserve existing intentional `/api/intelligence` resolution enrich call as primary;
-- on resolution 422/network/invalid structured response, use a zero-model-call source-grounded fallback that feeds the existing V8 Confirm Resolution + save/Plant Memory workflow;
-- no second AI provider, no second model call, no new state/archive/database;
-- exact RB10 Vision Test regression sentence is covered by acceptance tests;
-- production smoke must prove both regular surfaces load `lsc-v10-resolution-guard.js` and mobile loads `lsc-v10-verification-ui.js`.
+- eliminate visible flashing between legacy `VERIFY LAST HOUR` / `LAST HOUR VERIFIED` and V10 backlog counts;
+- mobile renderer creates the verification slot hidden and empty before paint;
+- V10 verification UI is the sole owner of CTA visibility, label and click behavior;
+- show only actionable truth: `1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, pending-sync wording, or no CTA when clear;
+- preserve the already-live resolution guard, shift verification queue, Hourly Performance, AI World, state/archive/intelligence and static browser asset architecture;
+- no new backend, provider, database or autonomous AI usage.
 
 Deployment target remains ONLY the existing projects and regular URLs:
 - Manager `prj_ETPejWyItkL7iE586cO4CbGlZWk6` → `https://live-shift-command-v74.vercel.app`
