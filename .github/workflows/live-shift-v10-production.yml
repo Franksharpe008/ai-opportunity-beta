@@ -1,0 +1,46 @@
+name: Live Shift V10 In-Place Production
+
+on:
+  push:
+    branches:
+      - live-shift-command-v10-recovery
+    paths:
+      - 'live-shift-command-beta/continuation-v10/**'
+      - '.github/workflows/live-shift-v10-production.yml'
+
+concurrency:
+  group: live-shift-v10-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: contains(github.event.head_commit.message, '[deploy-v10-production]')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: live-shift-command-beta/continuation-v10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require deployment credential
+        run: test -n "$VERCEL_TOKEN"
+      - name: Run V10 acceptance
+        run: node tests/run-v10-acceptance.js
+      - name: Build in-place releases from current production baseline
+        run: node tools/prepare-inplace-production.mjs
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Deploy mobile to existing project
+        run: cd dist-inplace/mobile && vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+      - name: Deploy manager to existing project
+        run: cd dist-inplace/manager && vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+      - name: Smoke existing URLs
+        run: |
+          curl -fsSL https://live-shift-command-v741-mobile.vercel.app/ | grep -q 'LSC V10 INPLACE MOBILE JS'
+          curl -fsSL https://live-shift-command-v74.vercel.app/ | grep -q 'LSC V10 INPLACE MANAGER JS'
+          curl -fsSL https://live-shift-command-v741-mobile.vercel.app/api/state >/dev/null
+          curl -fsSL https://live-shift-command-v74.vercel.app/api/state >/dev/null
