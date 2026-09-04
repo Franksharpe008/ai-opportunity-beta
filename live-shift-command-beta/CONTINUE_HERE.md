@@ -137,9 +137,23 @@ Production test on 2026-09-04 exposed two issues that must be fixed before the n
 
 Exact runtime proof from manager production deployment `dpl_9ygz671ciZGXTfoDh6go9r7My77f`: `/api/intelligence` POST returned 422 at `08:19:31`, `08:21:07`, and `08:21:32` UTC while earlier classify/transcribe calls returned 200. Shared state revision 107 still contains the open RB10 event and was not damaged.
 
-Implementation being validated in the repo:
+Implementation commit: `71ff4f2cb049c8eb8aad3a52c19e127f85e09bac`.
+Validation on that commit:
+- Live Shift V10 Acceptance push run `33855407932`: SUCCESS.
+- Live Shift V10 Acceptance PR run `33855412983`: SUCCESS.
+- Live Shift Handoff Guard push run `33855407861`: SUCCESS.
+- Live Shift Handoff Guard PR run `33855412962`: SUCCESS.
+- Production workflow correctly skipped because the commit had no `[deploy-v10-production]` marker.
+
+Implemented repair:
 - `lsc-v10-verification-ui.js`: the verification CTA only appears when action is required; labels are `1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, or pending-sync; no indicator when everything is complete. A MutationObserver immediately corrects legacy rerenders so no visible bounce remains.
 - `lsc-v10-resolution-guard.js`: keeps the exact existing `/api/intelligence` `enrich` call as primary. If that one call returns 422/network/invalid structured output during the Resolve + Verify screen, it performs a zero-model-call source-grounded fallback using only the operator statement, then feeds the result into the existing V8 human-confirmation/save workflow. No second provider, no second AI call, no new database.
-- Exact regression phrase under test: `They reset the vision system and we ran the four parts back through. They just reset it. It usually happens like this around midnight after midnight.` Expected safe interpretation: action = reset vision system; verification evidence = four parts rerun; recurrence signal = around/after midnight; root cause remains not established; verification remains recovered-not-permanent unless stronger evidence is stated.
+- Exact regression phrase is tested: `They reset the vision system and we ran the four parts back through. They just reset it. It usually happens like this around midnight after midnight.` Safe interpretation: action = reset vision system; verification evidence = four parts rerun; recurrence signal = around/after midnight; root cause remains not established; verification remains recovered-not-permanent unless stronger evidence is stated.
 
-Next step for this WIP: pass V10 Acceptance + Handoff Guard, then promote only through the existing in-place workflow with live Vercel approval and verify the regular manager/mobile URLs plus the exact resolution regression scenario. Do not call it production-fixed before that passes.
+Production smoke contract is being hardened before promotion so deployment must prove:
+- manager + mobile HTML load `lsc-v10-resolution-guard.js`;
+- mobile HTML loads `lsc-v10-verification-ui.js`;
+- both guard files are directly fetchable from the regular production URLs and contain their expected version/behavior markers;
+- normal state/archive/intelligence/static-asset/shared-revision checks still pass.
+
+Next step: commit the smoke-contract hardening together with both handoffs, rerun Acceptance + Handoff Guard, then create a fresh `[deploy-v10-production]` release marker. Stay live through Vercel approval, deploy manager first then mobile, and verify the exact regular URLs. Do not call the RB10 closeout production-fixed before that deployment and smoke pass.
