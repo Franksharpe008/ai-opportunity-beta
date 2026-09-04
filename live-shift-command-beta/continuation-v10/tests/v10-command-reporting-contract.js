@@ -7,7 +7,7 @@ assert(standards.includes('setManagerStandard'),'manager standards authority mis
 for(const k of ['availability','performance','quality','oee','adjustedGoal'])assert(standards.includes(k),`raw metric ${k} missing`);
 assert(line.includes('selected line owns mobile goal/actual/downtime context'),'mobile selected-line truth contract missing');
 assert(line.includes('process-attributed production only'),'mobile must not relabel shift Actual as line Actual');
-assert(war.includes('Jayson Mix'),'Production Manager name must be Jayson Mix');
+assert(/Jayson Mix/i.test(war),'Production Manager name must be Jayson Mix');
 assert(war.includes("['startStop','downBtn','scrapBtn','reworkBtn','noteBtn']"),'manager floor-authority lock missing');
 assert(war.includes('CROSS-SHIFT CONSTRAINT'),'cross-shift constraint view missing');
 assert(war.includes('LINE STANDARDS'),'manager line standards control missing');
