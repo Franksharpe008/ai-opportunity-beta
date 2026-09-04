@@ -1,0 +1,9 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const eventNode={};
+global.document={getElementById:id=>id==='events'?eventNode:null,querySelector:()=>null};global.window=global;global.state={current:{production:[{good:null}],events:[]}};global.setInterval=()=>0;
+vm.runInThisContext(fs.readFileSync(require('path').join(__dirname,'..','lsc-v10-brief.js'),'utf8'));
+const build=window.LSC_V10_BRIEF_BUILD;
+const manager={days:30,totals:{shifts:6,downtime:24,loss:17,scrap:2,rework:1,verified:1},trend:{downtime:-20,loss:-10,scrap:0,rework:null},issues:[{code:'RB08',name:'Robot Pause / Stop',occurrences:4,minutes:12,shifts:2,verified:0}],responses:[{team:'Maintenance',shift:'Third Shift',sampleLabel:'EARLY SIGNAL',sample:3,arrival:2.4,recovery:6.2,hold:67}],quality:[{shift:'Second Shift',area:'Opal Assembly',qty:3,open:1}],milestones:[{code:'VS01',name:'Vision fault',verification:'10-part run held',shift:'Third Shift',area:'E41'}]};
+const capacity={targetRate:40.5,qualifyingShifts:2,decision:{decision:'HOLD',confidence:'BUILDING',reason:'Capacity evidence incomplete.'},lossTotals:{downtime:8,quality:2,rate:7}};
+const runs=[{area:'Opal Assembly',process_actual:null,downtime_minutes:5,scrap:0,rework:0,top_code:'RB08'}];
+const b=build(manager,capacity,runs);assert.equal(b.blocks.length,9);assert.deepEqual(b.blocks.map(x=>x.title),['STATUS','WHAT HAPPENED','WHAT CHANGED','WHAT REPEATED','WHAT WORKED','OPPORTUNITY','RESPONSE','MANAGEMENT ATTENTION','PROOF']);assert(b.blocks.find(x=>x.title==='OPPORTUNITY').text.includes('HOLD (BUILDING)'));assert(b.blocks.find(x=>x.title==='MANAGEMENT ATTENTION').text.includes('Close production Actual evidence gaps'));assert(b.blocks.find(x=>x.title==='PROOF').text.includes('not treated as zero'));assert(b.blocks.find(x=>x.title==='WHAT HAPPENED').text.includes('Opal Assembly'));console.log('V10 BRIEF ACCEPTANCE: PASS');process.exit(0);
