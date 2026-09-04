@@ -1,0 +1,128 @@
+name: Live Shift One Real AI Check
+
+on:
+  push:
+    branches:
+      - live-shift-command-v10-recovery
+    paths:
+      - '.github/workflows/live-shift-one-real-ai-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  one-real-summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: One real production AI summary check
+        env:
+          LSC_URL: https://live-shift-command-v74.vercel.app
+        run: |
+          node <<'NODE'
+          const base = process.env.LSC_URL;
+          const stateRes = await fetch(`${base}/api/state`, {cache:'no-store'});
+          if (!stateRes.ok) throw new Error(`state_http_${stateRes.status}`);
+          const envelope = await stateRes.json();
+          const st = envelope.state || {};
+          const s = st.current;
+          if (!s) throw new Error('no_current_shift');
+
+          const goal = Number(st.config?.shiftGoal ?? 400);
+          const prod = (s.production || []).reduce((a,p)=>{
+            if (p?.good != null && p.good !== '' && Number.isFinite(+p.good)) { a.actual += +p.good; a.known++; }
+            a.scrap += +p?.scrap || 0;
+            a.rework += +p?.rework || 0;
+            return a;
+          }, {actual:0,known:0,scrap:0,rework:0});
+
+          const start = +new Date(s.start || 0);
+          const end = Math.min(Date.now(), +new Date(s.actualEnd || s.runtimeEndedAt || s.plannedEnd || Date.now()));
+          const mins = Math.max(0, (end - start) / 60000);
+          const targets = s.hourlyTargets || st.config?.hourlyTargets || [];
+          let original = 0;
+          for (let i=0;i<targets.length;i++) original += (+targets[i]||0) * (Math.min(60, Math.max(0, mins - i*60))/60);
+          original = Math.round(original);
+
+          let ints = (s.events || []).filter(e=>e.type==='downtime'&&e.startedAt)
+            .map(e=>[Math.max(start,+new Date(e.startedAt)),Math.min(end,+new Date(e.endedAt||Date.now()))])
+            .filter(([a,b])=>Number.isFinite(a)&&Number.isFinite(b)&&b>a)
+            .sort((a,b)=>a[0]-b[0]);
+          let downMs = 0;
+          if (ints.length) {
+            let [a,b] = ints[0];
+            for (let i=1;i<ints.length;i++) {
+              const [x,y] = ints[i];
+              if (x <= b) b = Math.max(b,y); else { downMs += b-a; [a,b]=[x,y]; }
+            }
+            downMs += b-a;
+          }
+          const downtime = Math.round((downMs/60000)*10)/10;
+          const rate = Number(s.mesRate || st.config?.mesRate || 40.5);
+          const impact = Math.max(0, Math.round(downtime * rate / 60));
+          const adjusted = Math.max(0, original - impact);
+          const expected = Math.max(0, adjusted - prod.scrap);
+          const actual = prod.known ? prod.actual : null;
+
+          const events = (s.events || []).map(e=>({
+            id:e.id||null,
+            area:e.area||null,
+            code:e.issueCode||null,
+            name:e.reason||null,
+            duration_minutes:e.type==='downtime'&&e.startedAt ? Math.round(Math.max(0,(+new Date(e.endedAt||Date.now()))-(+new Date(e.startedAt)))/6000)/10 : null,
+            status:e.type==='downtime'&&!e.endedAt?'open_at_handoff':e.status||'captured',
+            responder:Object.keys(e.responders||{})[0]||null,
+            action_taken:Array.isArray(e.actionTaken)?e.actionTaken.join('; ')||null:null,
+            result:e.result||null,
+            verification:e.verification||null,
+            follow_up:e.followUp||null,
+            notes:e.notes||null
+          }));
+
+          const payload = {
+            task:'summary',
+            shift:{
+              label:s.label||'',
+              workDate:s.workDate||'',
+              production:{
+                goal,
+                actual,
+                gap:actual==null?null:actual-goal,
+                original_opportunity:original,
+                adjusted_target:adjusted,
+                expected_good:expected,
+                downtime_impact_units:impact,
+                scrap:prod.scrap,
+                rework:prod.rework,
+                downtime_minutes:downtime,
+                unique_downtime_minutes:downtime
+              },
+              events,
+              open_items:events.filter(e=>e.status==='open_at_handoff').map(e=>`${e.area||'Process'} ${e.code||''} ${e.name||''} remains open at handoff`)
+            }
+          };
+
+          const r = await fetch(`${base}/api/intelligence`, {
+            method:'POST',
+            headers:{'content-type':'application/json'},
+            body:JSON.stringify(payload),
+            cache:'no-store'
+          });
+          const text = await r.text();
+          let d = {};
+          try { d = JSON.parse(text); } catch {}
+
+          console.log(`REAL_AI_HTTP=${r.status}`);
+          console.log(`REAL_AI_OK=${d.ok === true}`);
+          console.log(`REAL_AI_ANALYSIS_PRESENT=${!!d.analysis}`);
+          console.log(`REAL_AI_AUDIT_TASK=${d.audit?.task || 'none'}`);
+          console.log(`REAL_AI_USAGE_UNITS=${Number.isFinite(+d.audit?.usageUnits) ? +d.audit.usageUnits : 'unknown'}`);
+          console.log(`REAL_AI_SCHEMA_VALID=${d.audit?.schemaValid === true}`);
+          if (!r.ok || d.ok === false || !d.analysis) {
+            console.error(`REAL_AI_ERROR=${d.code || d.error || `http_${r.status}`}`);
+            process.exit(1);
+          }
+          NODE
