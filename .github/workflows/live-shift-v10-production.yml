@@ -139,9 +139,9 @@ jobs:
           grep -q 'backlog indicator only when action is required' /tmp/mobile-verify-ui.js
           grep -q '422/network-safe source-grounded closeout' /tmp/mobile-resolution-guard.js
           grep -q '422/network-safe source-grounded closeout' /tmp/manager-resolution-guard.js
-          grep -q 'real AI primary' /tmp/mobile-ai-reliability.js
+          grep -q 'ECC real-AI-first' /tmp/mobile-ai-reliability.js
           grep -q 'zero second model call' /tmp/mobile-ai-reliability.js
-          grep -q 'real AI primary' /tmp/manager-ai-reliability.js
+          grep -q 'ECC real-AI-first' /tmp/manager-ai-reliability.js
           grep -q 'zero second model call' /tmp/manager-ai-reliability.js
           grep -q 'zero autonomous model calls' /tmp/manager-ai-world.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/api/state >/tmp/manager-state.json
