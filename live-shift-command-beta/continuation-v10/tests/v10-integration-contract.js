@@ -13,4 +13,4 @@ assert(cause.includes("EXT=['Measurement','Environment']"));assert(cause.include
 assert(brief.includes("document.getElementById('miBrief')"));assert(!brief.includes('id=\"v10OperatingBrief\"'));
 for(const src of [capacity,capacityUi,brief]){assert(!/config\.mesRate\s*=/.test(src));assert(!/shiftGoal\s*=/.test(src));}
 assert(capacity.includes("decision:'HOLD'"));assert(capacity.includes("decision:'INVESTIGATE'"));assert(capacity.includes("decision:'TRIAL HIGHER RATE'"));
-console.log('V10 INTEGRATION CONTRACT: PASS · premium CTA + real-AI-first ACC alias reliability preserve one shared brain');
+console.log('V10 INTEGRATION CONTRACT: PASS · premium CTA + real-AI-first ECC alias reliability preserve one shared brain');
