@@ -1,194 +1,187 @@
-# Live Shift Command V10 — Integration Gate
+# Live Shift Command V10 — Integration Contract
 
-## Source of truth
+## Core rule
 
-Production is currently a Vercel CLI/prebuilt deployment and is newer than GitHub `main`. Do not deploy `main` over production.
+**V9 becomes V10.**
 
-Protected continuation work lives on:
+V8/V9 modules are not an untouchable product beside V10; they are the working production foundation that V10 evolves. Do not rewrite working workflows, but do let V10 override the specific writer/UI behavior that must change.
 
-`live-shift-command-v10-recovery`
+Read these with this file:
 
-Production baseline at recovery:
+- `../CONTINUE_HERE.md`
+- `RELEASE_BASELINE.md`
+- `V10_LOAD_MATRIX.md`
+- `WEB_MOBILE_AUTHORITY.md`
+- `AI_INTEGRATION.md`
+- `PREVIEW_GATE.md`
 
-- Project: `live-shift-command-v74`
-- Production URL: `https://live-shift-command-v74.vercel.app`
-- Baseline deployment: `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX`
-- Deployment source: CLI / prebuilt output, not Git-linked
+## Existing systems V10 reuses
 
-## V10 production load order
+V10 does **not** create replacements for:
 
-V10 is additive to the recovered V8/V9 manager build. When integrating into a recovered copy of the production deployment workspace, load these after the existing V9 assets:
+- `/api/state` shared revisioned state
+- `/api/archive` permanent Plant Memory
+- `/api/intelligence` existing live AI bridge
+- V8 downtime / voice / photo / type capture
+- canonical downtime codes and 4M classification
+- V8 quality flow
+- responders / recovery / verification
+- Shift Recall
+- V9 schedule versions / detached schedules
+- V9 cross-midnight ownership
+- V9 hot memory / Live Now / Calendar Memory
+- existing manager ratings / response / quality / solution memory / evidence ledger
+- existing Morning Meeting Brief button
 
-```html
-<link rel="stylesheet" href="/lsc-command-v10.css">
-<link rel="stylesheet" href="/lsc-v10-capacity.css">
-<link rel="stylesheet" href="/lsc-v10-brief.css">
+## V10 shared-state evolution
 
-<script src="/lsc-v10-core.js"></script>
-<script src="/lsc-v10-ui.js"></script>
-<script src="/lsc-v10-capacity.js"></script>
-<script src="/lsc-v10-capacity-ui.js"></script>
-<script src="/lsc-v10-brief.js"></script>
-```
+V10 upgrades the existing web `update()` and mobile `mutate()` writer so confirmed writes use:
 
-Required ordering:
+`schema = live-shift-command/v10`
 
-1. existing `app1.js`, `app2.js`, `app3.js`
-2. existing `lsc-intelligence.js`
-3. existing `lsc-v8.js`
-4. existing `manager-intelligence.js`
-5. existing `lsc-command-v9.js`
-6. `lsc-v10-core.js`
-7. `lsc-v10-ui.js`
-8. `lsc-v10-capacity.js`
-9. `lsc-v10-capacity-ui.js`
-10. `lsc-v10-brief.js`
+while preserving the same GET → revision → POST → HTTP 409 retry workflow.
 
-The old monolithic V10 prototype was removed after the safer modular rewrite.
+Existing `state.config` is retained. V10 adds only scoped capability metadata under `config.v10`.
 
-## V10 data contract
+Existing shift production remains:
 
-V10 never reallocates generic shift production into a process. Existing `current.production[]` remains the shift-level source of truth.
+`current.production[]`
 
-Process-level Good Actual is supplemental and is stored in:
+V10 adds explicit process/run/hour Good Actual:
 
 `current.processProduction[]`
 
-Each process-production record includes run identity, plant shift context, schedule version, work date, Chicago plant-hour timestamp, source, and evidence note.
+No shift Actual is inferred or redistributed into process Actual.
 
-Scrap/Rework stays in the existing quality-event workflow. V10 does not add process-production scrap/rework into quality totals, preventing double counting.
+The same process + run + plant hour is an upsert key. A correction replaces the active value and preserves the prior value in `corrections[]` instead of double-counting production.
 
-Missing `good` values remain missing. `null` and blank values must never be coerced to zero. A real numeric zero remains a valid known zero when it has evidence that the hour was actually recorded.
+Scrap / Rework remains in the existing event workflow and is never duplicated into Process Actual totals.
 
-## Calendar / operating-day contract
+## Web V10
+
+Manager web keeps the existing V9 Live Now area table. V10 enhances it in place with:
+
+- compact Process Actual action
+- one-line process/run evidence context
+
+New manager detail surfaces are limited to genuinely new intelligence:
+
+- Calendar Day Reconstruction
+- process run → hour → evidence drilldown
+- Rate / Capacity Intelligence
+- weak-shift constraint and D/Q/R loss mix
+- 4M / optional 6M cause Pareto
+- incident → action → verification drill-through
+
+The existing `MORNING MEETING BRIEF` button is upgraded in place with V10 process/capacity evidence.
+
+## Mobile V10
+
+Mobile remains floor-focused. It adds:
+
+- compact Process / Run card
+- Process Actual capture
+- Process Actual in Shift Detail
+
+It retains the existing V8/V9 downtime, quality, evidence, response, Copilot and closeout workflows.
+
+Company Goal is manager-controlled:
+
+- mobile edit control is removed
+- Start Shift displays the shared goal read-only
+- mobile uses the manager value but cannot change it
+
+Mobile does not load Capacity Intelligence, manager Calendar Reconstruction, manager brief, schedule configuration or optional 6M refinement.
+
+## 4M / optional 6M
+
+Canonical downtime-code mapping remains 4M.
+
+Manager can optionally refine an event to:
+
+- Measurement
+- Environment
+
+when evidence supports the 6M extension. The canonical 4M value is retained for auditability. The V10 cause Pareto uses the 6M refinement when present.
+
+## Existing AI integration
+
+The live V8 `/api/intelligence` path is retained.
+
+V10 only augments existing request context:
+
+- Copilot receives `process_run_hourly`
+- classification receives `process_run_hourly`
+
+There is no second AI provider or model path.
+
+AI remains advisory and cannot write Company Goal, MES rate, schedules, Process Actual, downtime resolution, quality disposition or capacity configuration.
+
+## Calendar / operating day
 
 Plant timezone: `America/Chicago`.
 
-Plant operating day: 07:00 through 06:59:59 the next calendar day.
+Plant operating day: **07:00 → 06:59:59**.
 
-A post-midnight event can reconstruct into the prior production day when any of these prove ownership:
+Third Shift and detached process schedules retain their existing cross-midnight work-date rules. V10 reconstruction uses the event's captured operating / plant-shift / process-schedule work-date evidence.
 
-- `operatingDate`
-- `plantShiftWorkDate`
-- `processScheduleWorkDate`
+## Capacity decision
 
-Detached process schedule identity remains authoritative when a `processScheduleInstanceId` exists.
-
-## Rate / capacity intelligence contract
-
-The company target is compared against demonstrated production evidence. The engine returns only:
+Only three advisory states exist:
 
 - `HOLD`
 - `INVESTIGATE`
 - `TRIAL HIGHER RATE`
 
-A higher-rate trial is blocked unless all three plant shifts satisfy the evidence gate. Each shift must have at least two qualifying completed shift samples and at least six trustworthy hourly production records in the 30-day window.
+A higher-rate trial remains blocked until all three shifts have repeated trustworthy production evidence. Missing Actual and untouched legacy zeros do not qualify.
 
-A completed shift does not qualify unless it contains at least three trustworthy hourly records. Null/blank Actual is excluded. Legacy/default zero rows with no `updatedAt` evidence are excluded. A deliberate zero with a recorded timestamp remains valid evidence.
+Capacity intelligence never writes `config.mesRate` or `shiftGoal`.
 
-The controlled higher-rate path also requires:
+Current sparse real archive expectation remains:
 
-- all three shifts to have established evidence
-- the weakest shift to remain at or above 90% median attainment
-- cross-shift rate spread below the investigation threshold
-- the weakest shift's demonstrated median rate to clear the current company rate by at least 5%
+`HOLD / BUILDING`
 
-The engine never changes the company target automatically. A `TRIAL HIGHER RATE` result is advisory and provides a conservative trial rate only.
+## Permanent archive finding
 
-Loss decomposition remains deterministic and evidence-linked:
+A read-only probe of the current production archive on 2026-09-03 showed that `include=shifts` returns the full completed shift object, including fields introduced well after the original archive schema such as:
 
-- downtime loss
-- quality loss
-- remaining rate loss
-- 4M downtime Pareto
-- weak-shift identification
-- incident / action / verification drill-through
+- nested `intelligence.classification`
+- `intelligenceUsage`
+- `scheduleVersionId`
+- `plantShiftId`
+- `productionTracking`
+- notes
+- full responder objects
+- event schedule/context fields
 
-## V10 operating brief contract
+This strongly indicates the server persists whole shift JSON rather than an old field whitelist. Therefore `processProduction[]` should survive archive without a server schema rewrite.
 
-The V10 Operating Brief is deterministic. It composes the existing manager evidence, V10 process-run/hourly evidence and the V10 rate/capacity decision into this fixed management structure:
+A real V10 test shift must still prove End Shift → archive → Day Reconstruction before production promotion.
 
-1. STATUS
-2. WHAT HAPPENED
-3. WHAT CHANGED
-4. WHAT REPEATED
-5. WHAT WORKED
-6. OPPORTUNITY
-7. RESPONSE
-8. MANAGEMENT ATTENTION
-9. PROOF
+## Acceptance
 
-The brief must explicitly surface evidence gaps. Missing current Actual must be described as missing and must never appear as zero. A `HOLD / BUILDING` capacity result must tell management to close production evidence gaps before judging capacity. A `TRIAL HIGHER RATE` result remains advisory and cannot modify configuration.
-
-## Current real-data behavior at recovery
-
-The recovered archive does **not** currently contain enough trustworthy cross-shift production evidence to justify a rate increase.
-
-Observed 30-day archive state at recovery:
-
-- legacy First Shift record contains untouched zero rows without `updatedAt` evidence — excluded
-- archived Third Shift has only two trustworthy hourly Actual entries — below the qualifying-shift minimum
-- newer First Shift record has missing (`null`) Actual — excluded
-- active Second Shift had missing (`null`) Actual at the recovery check and is incomplete
-
-Therefore the intended current V10 rate/capacity state is `HOLD / BUILDING`. This is a data-quality safeguard, not a negative performance judgment.
-
-## Acceptance tests
-
-Run from `live-shift-command-beta/continuation-v10`:
+Run:
 
 ```bash
-node tests/v10-core-acceptance.js
-node tests/v10-capacity-acceptance.js
-node tests/v10-brief-acceptance.js
+node tests/run-v10-acceptance.js
 ```
 
-Core acceptance verifies:
+The suite covers:
 
-- null/blank Actual remains missing
-- real zero remains a known zero
-- Chicago plant-time conversion
-- 2:00 AM maps into the prior operating day
-- post-midnight Third Shift evidence reconstructs correctly
-- detached Opal Assembly Night keeps its run identity
-- explicit process Actual is counted only as process Actual
-- supplemental process-production fields do not double-count quality totals
-- downtime is attached to the correct process/run
+- missing-vs-zero production truth
+- Chicago/cross-midnight attribution
+- process Actual correction safety
+- config preservation
+- existing AI-path context augmentation
+- capacity HOLD / INVESTIGATE / TRIAL decisions
+- optional 6M cause refinement
+- nine-section brief
+- non-overlap architecture contracts
 
-Capacity acceptance verifies:
+Draft integration PR: **#1**. It is a test/review checkpoint and must remain unmerged until `PREVIEW_GATE.md` passes.
 
-- strong repeated evidence across all three shifts can produce `TRIAL HIGHER RATE`
-- a materially weak shift produces `INVESTIGATE`
-- incomplete evidence produces `HOLD / BUILDING`
-- null production does not qualify
-- untouched default zero rows do not qualify
+## Production rule
 
-Brief acceptance verifies:
+Never deploy stale GitHub `main` over the live CLI/prebuilt applications. Re-check both live deployment heads immediately before preview/promotion, preserve rollback IDs, and promote web + mobile as one coordinated V10 shared-schema release.
 
-- all nine management sections are present and ordered correctly
-- `HOLD / BUILDING` is carried into Opportunity
-- missing Actual appears in Management Attention and Proof
-- process-run evidence appears in What Happened
-
-## Production safety gate
-
-Do not replace the current production deployment until all of the following are true:
-
-- V10 core syntax passes
-- V10 UI syntax passes
-- V10 capacity engine/UI syntax passes
-- V10 brief syntax passes
-- all V10 acceptance tests pass
-- recovered V8/V9 assets are present in the deployment workspace
-- manager page boots with no console exception
-- V9 Live Now still renders
-- V9 Calendar Memory still opens
-- V10 Day Reconstruction opens today and an archived date
-- Process Actual can be saved without changing shift Actual
-- existing Scrap/Rework workflow still behaves unchanged
-- Rate Opportunity renders `HOLD / BUILDING` on the current sparse archive rather than inventing capacity
-- V10 Operating Brief reflects the same capacity decision and evidence gaps
-- rate/capacity decisions never write to `config.mesRate` or `shiftGoal`
-- Shift Roster repository remains untouched
-
-Production should be promoted only from a recovered copy of the current CLI/prebuilt manager deployment, never from stale GitHub `main`.
+Shift Roster remains untouched.
