@@ -1,21 +1,22 @@
 # V10 Production Release Marker
 
-Premium verification CTA source fix: `9d45dc82fb2299291c706f02e41a18c08805e27d`
-Verification UI regression test: `a5f05bad9173d9a474a65a2ede28ac1dd465688c`
-Integration-contract correction: `44675694b433f3c8957a24e4fc37fc6c07f07460`
-Current handoff head: `eb5e2a4980a27545183c8b97d39ac71be5d5c510`
+Combined release: premium verification CTA + AI Brief / Shift Copilot reliability.
 
 Validated before promotion:
-- Live Shift V10 Acceptance run `33859323901`: SUCCESS
-- Live Shift Handoff Guard run `33859323924`: SUCCESS
+- V10 mocked/local acceptance run `33860204477`: SUCCESS
+- no real `/api/intelligence` POST was fired by assistant for this validation
+- earlier premium-only production run `33859375212` was cancelled at Vercel Authenticate; manager/mobile deploy steps were skipped
 
 Release scope:
 - eliminate visible flashing between legacy `VERIFY LAST HOUR` / `LAST HOUR VERIFIED` and V10 backlog counts;
-- mobile renderer creates the verification slot hidden and empty before paint;
-- V10 verification UI is the sole owner of CTA visibility, label and click behavior;
-- show only actionable truth: `1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, pending-sync wording, or no CTA when clear;
-- preserve the already-live resolution guard, shift verification queue, Hourly Performance, AI World, state/archive/intelligence and static browser asset architecture;
-- no new backend, provider, database or autonomous AI usage.
+- `lsc-v10-mobile.js` `1.3.1` renders the verification CTA slot hidden + empty before paint;
+- V10 verification UI is sole owner of backlog visibility/text;
+- add `lsc-v10-ai-reliability.js` `1.0.1` to manager + mobile;
+- real existing `/api/intelligence` remains primary;
+- `summary` / `copilot` gateway failure falls back to live shared evidence with `usageUnits: 0` and **zero second model call**;
+- `lsc-v10-ai-world.js` `1.2.0` supplies deliberate AI Brief/Copilot requests with hourly truth, verification trust, process-run context, previous shift, recovery math, handoff overlap and resolution memory;
+- preserve existing state/archive/intelligence, resolution guard, verification queue, static browser assets, Company Goal authority and all V8/V9 architecture;
+- production smoke must not POST to AI; Frank performs the real AI test live after deployment.
 
 Deployment target remains ONLY the existing projects and regular URLs:
 - Manager `prj_ETPejWyItkL7iE586cO4CbGlZWk6` → `https://live-shift-command-v74.vercel.app`
