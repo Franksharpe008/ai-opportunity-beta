@@ -1,0 +1,151 @@
+name: Promote Live Shift Command V10 to Existing Projects
+
+on:
+  push:
+    branches:
+      - live-shift-command-v10-recovery
+    paths:
+      - '.github/v10-promote-now'
+  workflow_dispatch:
+
+concurrency:
+  group: live-shift-command-v10-production
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: team_QlAarwuD75fLVrZQEi7r3OOh
+      MANAGER_PROJECT_ID: prj_ETPejWyItkL7iE586cO4CbGlZWk6
+      MOBILE_PROJECT_ID: prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON
+      MANAGER_BASE: https://live-shift-command-v74.vercel.app
+      MOBILE_BASE: https://live-shift-command-v741-mobile.vercel.app
+      MANAGER_API_ORIGIN: https://live-shift-command-v74-jd65bh7ol-franksharpe008s-projects.vercel.app
+      MOBILE_API_ORIGIN: https://live-shift-command-v741-mobile-5xuo8fp2t.vercel.app
+    steps:
+      - name: Checkout V10 branch
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run V10 acceptance gate
+        working-directory: live-shift-command-beta/continuation-v10
+        run: node tests/run-v10-acceptance.js
+
+      - name: Require Vercel deployment credential
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN repository secret is not configured. Refusing to create or retarget any deployment."
+            exit 78
+          fi
+
+      - name: Recover exact current production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .v10-release
+          mkdir -p .v10-release/web .v10-release/mobile
+
+          get() {
+            local base="$1" out="$2" file="$3"
+            local path="$file"
+            [ "$file" = "index.html" ] && path=""
+            curl --retry 4 --retry-all-errors -fsSL "$base/$path" -o "$out/$file"
+          }
+
+          for f in index.html app1.js app2.js app3.js lsc-intelligence.js lsc-v8.js manager-intelligence.js lsc-command-v9.js style.css lsc-v8.css manager-intelligence.css lsc-command-v9.css; do
+            get "$MANAGER_BASE" .v10-release/web "$f"
+          done
+
+          for f in index.html app1.js app2.js app3.js lsc-intelligence.js lsc-v8.js lsc-command-v9.js style.css lsc-v8.css lsc-command-v9.css; do
+            get "$MOBILE_BASE" .v10-release/mobile "$f"
+          done
+
+      - name: Build V10 over exact V9 production baseline
+        working-directory: live-shift-command-beta/continuation-v10
+        run: |
+          node tools/build-v10-release.mjs \
+            --web "$GITHUB_WORKSPACE/.v10-release/web" \
+            --mobile "$GITHUB_WORKSPACE/.v10-release/mobile"
+
+      - name: Preserve existing API backend while replacing front end
+        shell: bash
+        run: |
+          cat > .v10-release/web/vercel.json <<JSON
+          {
+            "rewrites": [
+              {"source": "/api/state", "destination": "$MANAGER_API_ORIGIN/api/state"},
+              {"source": "/api/archive", "destination": "$MANAGER_API_ORIGIN/api/archive"},
+              {"source": "/api/intelligence", "destination": "$MANAGER_API_ORIGIN/api/intelligence"}
+            ]
+          }
+          JSON
+
+          cat > .v10-release/mobile/vercel.json <<JSON
+          {
+            "rewrites": [
+              {"source": "/api/state", "destination": "$MOBILE_API_ORIGIN/api/state"},
+              {"source": "/api/archive", "destination": "$MOBILE_API_ORIGIN/api/archive"},
+              {"source": "/api/intelligence", "destination": "$MOBILE_API_ORIGIN/api/intelligence"}
+            ]
+          }
+          JSON
+
+          mkdir -p .v10-release/web/.vercel .v10-release/mobile/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$MANAGER_PROJECT_ID" > .v10-release/web/.vercel/project.json
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$MOBILE_PROJECT_ID" > .v10-release/mobile/.vercel/project.json
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Deploy manager V10 to existing manager project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        working-directory: .v10-release/web
+        run: |
+          set -euo pipefail
+          vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+
+      - name: Deploy mobile V10 to existing mobile project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        working-directory: .v10-release/mobile
+        run: |
+          set -euo pipefail
+          vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+
+      - name: Verify the same production URLs now serve V10
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_contains() {
+            local url="$1" needle="$2"
+            for n in $(seq 1 18); do
+              body="$(curl --retry 2 --retry-all-errors -fsSL "$url" || true)"
+              if printf '%s' "$body" | grep -Fq "$needle"; then return 0; fi
+              sleep 5
+            done
+            echo "Expected '$needle' at $url"
+            return 1
+          }
+
+          check_contains "$MANAGER_BASE/" 'Command Center V10'
+          check_contains "$MOBILE_BASE/" 'Live Shift Command Mobile · V10'
+          check_contains "$MANAGER_BASE/lsc-v10-floor-ops.js" 'shift-attributed audit'
+          check_contains "$MOBILE_BASE/lsc-v10-mobile.js" 'embedded line context'
+          curl --retry 4 --retry-all-errors -fsSL "$MANAGER_BASE/api/state" >/tmp/manager-state.json
+          curl --retry 4 --retry-all-errors -fsSL "$MOBILE_BASE/api/state" >/tmp/mobile-state.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const a=JSON.parse(fs.readFileSync('/tmp/manager-state.json','utf8'));
+          const b=JSON.parse(fs.readFileSync('/tmp/mobile-state.json','utf8'));
+          if(!a.state||!b.state) throw new Error('shared state missing after V10 deploy');
+          if(a.revision!==b.revision) throw new Error(`web/mobile revisions differ: ${a.revision} vs ${b.revision}`);
+          console.log(`V10 SAME-URL PROMOTION VERIFIED · shared revision ${a.revision}`);
+          NODE
