@@ -15,49 +15,62 @@ Any approval must be handled live in the same session. Generate only while Frank
 Repo: `Franksharpe008/ai-opportunity-beta`
 Branch: `live-shift-command-v10-recovery`
 Draft PR: `#1`
+Current release marker commit: `c94fee2c002c1f3cac23dd778cb1ddb2300e1287`
 
 ## Production surfaces — these are the product
 Manager:
-- `https://live-shift-command-v74.vercel.app`
-- project `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
-- current production before verification-queue promotion: `dpl_9ygz671ciZGXTfoDh6go9r7My77f`
-- rollback: `dpl_7BTWfSwY6rsLv5U1nc2TSaifcka2`
+- regular URL: `https://live-shift-command-v74.vercel.app`
+- project: `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
+- current production deployment: `dpl_ALaP1FtaCyBjxPRTf8e8HNg3K94y`
+- immutable deployment URL: `https://live-shift-command-v74-rnihgr5fi-franksharpe008s-projects.vercel.app`
+- rollback: `dpl_9ygz671ciZGXTfoDh6go9r7My77f`
 - pre-V10 rollback: `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX`
 
 Mobile:
-- `https://live-shift-command-v741-mobile.vercel.app`
-- project `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
-- current production before verification-queue promotion: `dpl_DDgcJomaSKVfi7tAF6apJsVJgLQg`
-- rollback: `dpl_HAH4qUszWYVc3q2NtLWRf3n5RVUL`
+- regular URL: `https://live-shift-command-v741-mobile.vercel.app`
+- project: `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
+- current production deployment: `dpl_4pg2tkmUSiEC9qWFKqwgdDn6yyHa`
+- immutable deployment URL: `https://live-shift-command-v741-mobile-clje5dhr2.vercel.app`
+- rollback: `dpl_DDgcJomaSKVfi7tAF6apJsVJgLQg`
 - pre-V10 rollback: `dpl_GsxQqw4seGRvtXqE1uupksyUKba9`
 
 Deprecated V10 side projects are scaffolding only. Do not extend them.
 
-## Last verified shared brain
-- manager/mobile `/api/state` 200, same revision `99`
-- authoritative `state.config.shiftGoal=400`
-- raw current Third Shift still contains legacy `current.shiftGoal=265`; do not rewrite historical truth merely for display
-- mobile `/api/archive` 200
-- `/api/intelligence` preserved; GET returns expected 405 because AI is POST-only
-- no state reset/data wipe
-- AI World explicit-use only; zero background/hourly model calls
+## Last verified shared brain — production proof after queue promotion
+GitHub Actions production run `33852945984`, rerun job `100962551695`: **SUCCESS**.
+
+Verified after manager + mobile deployment:
+- manager/mobile `/api/state` both 200 and same shared revision `107`;
+- authoritative `state.config.shiftGoal=400` remains manager-controlled;
+- manager `/api/archive` healthy;
+- mobile `/api/archive` healthy;
+- manager/mobile `/api/intelligence` preserve existing POST-only backend; GET returns expected 405;
+- browser-facing V9 CSS/JS are normal static files, not `/api/base` requests;
+- `lsc-v10-ai-world.js` loaded on manager + mobile;
+- `lsc-v10-hourly-performance.js` + CSS loaded on mobile;
+- `lsc-v10-verification-queue.js` loaded on manager + mobile;
+- no state reset/data wipe;
+- AI World remains explicit-use only; zero background/hourly model calls.
+
+Smoke result emitted by CI:
+`SAFE V10 PROMOTION VERIFIED · shared revision 107 · browser assets static · verification queue loaded`
 
 # SAFARI / STATIC-ASSET ARCHITECTURE — RESOLVED AND BINDING
-Exact V9 CSS/JS are normal static files in the same production deployment. Browser-facing HTML must not depend on `/api/base`. Direct production proof after repair: mobile root 200, `/style.css` 200 `text/css`, V9 JS 200 JavaScript, state 200 revision 99, archive 200, intelligence expected GET 405.
+Exact V9 CSS/JS are normal static files in the same production deployment. Browser-facing HTML must not depend on `/api/base`.
 
-Release builder must harvest the existing V9 shell from normal static paths (`/${name}`), not `/api/base?file=...`. The manager backend state/archive/intelligence proxy remains the preserved protected V9 authority via OIDC; mobile state/archive/intelligence use the live manager authority.
+Release builder harvests the existing V9 shell from normal static paths (`/${name}`), not `/api/base?file=...`. The manager backend state/archive/intelligence proxy remains the preserved protected V9 authority via OIDC; mobile state/archive/intelligence use the live manager authority.
 
 The old `curl | grep -q` smoke pattern can falsely cause curl exit 23 after a successful match. Production workflow downloads files first and greps the downloaded files.
 
-# SHIFT VERIFICATION QUEUE — VALIDATED FOR PRODUCTION PROMOTION
+# SHIFT VERIFICATION QUEUE — LIVE IN PRODUCTION
 The old `VERIFY LAST HOUR` mental model is retired. Real operations may be too busy for one-hour punctual entry, a whole shift/day can be chaotic, and connectivity can fail.
 
 Feature commit: `265f15bf1525d872fb37216ad9f2814103a68500`.
 Builder correction commit: `d593302429f5abd6952d258cf0e4ac9aae65b6d5`.
-Latest acceptance run `33852771609`: SUCCESS.
-Latest Handoff Guard run `33852771439`: SUCCESS.
+Production release marker: `c94fee2c002c1f3cac23dd778cb1ddb2300e1287`.
+Production run: `33852945984` → SUCCESS after live Vercel approval.
 
-Implemented behavior from the V10 pilot shift forward:
+Live behavior from the V10 pilot shift forward:
 - every completed production hour remains recoverable until verified;
 - applies to First, Second, Third, overtime/rough days — not just nights;
 - queue identity is `shift id + original hour`;
@@ -74,16 +87,14 @@ Implemented behavior from the V10 pilot shift forward:
 - AI World gets verification trust/status only when a human intentionally asks Copilot/AI;
 - manager Live Now gets a verification-completeness indicator.
 
-Migration cutoff: `2026-09-04T04:00:00.000Z` (start of active V10 pilot Third Shift). Do not create backlog for older pre-feature shifts.
+Migration cutoff: `2026-09-04T04:00:00.000Z`. Do not create backlog for older pre-feature shifts.
 
 Module: `continuation-v10/lsc-v10-verification-queue.js`.
 
-# SAFE-STOP HISTORY FOR THIS PROMOTION
-First deployment marker `03310f94b91e87f380f6962658a76d1674faf427` triggered production run `33852395169`.
+# SAFE-STOP HISTORY
+First queue-promotion marker `03310f94b91e87f380f6962658a76d1674faf427` triggered run `33852395169` and stopped safely before Vercel auth/deploy because the old builder requested retired `/api/base?file=app1.js` and received 404. Healthy production was untouched.
 
-It **stopped safely before Vercel auth/deploy** because the old builder requested retired `/api/base?file=app1.js` and received 404. Acceptance had passed; Vercel install/auth/deployment steps were skipped; healthy production was untouched.
-
-Correction commit `d593302429f5abd6952d258cf0e4ac9aae65b6d5` changed browser-shell harvesting to current normal static paths. Direct manager checks `/app1.js` and `/manager-intelligence.js` returned 200. Deployment contract now explicitly rejects `/api/base?file=` harvesting. Acceptance and handoff guard are green.
+Correction commit `d593302429f5abd6952d258cf0e4ac9aae65b6d5` switched browser-shell harvesting to current normal static paths and added a contract rejecting `/api/base?file=` harvesting. The final promotion used that corrected path successfully.
 
 # ARCHITECTURE TO PRESERVE
 One shared brain:
@@ -114,7 +125,7 @@ Opal Assembly detached Day 07:00–15:40; Night 19:00–03:40.
 Truth model: `Calendar Day → Plant Shift → Process Run → Hour → Production + Downtime + Quality + Response + Evidence + Verification`.
 
 # NEXT STEP
-Trigger the fresh `[deploy-v10-production]` verification-queue promotion using the validated static-shell builder. Stay live through Vercel approval. After successful manager + mobile deploy and smoke, independently verify the regular URLs, capture new deployment IDs/shared revision, and update both handoffs without another deploy trigger.
+Do not rebuild or redeploy just to inspect. Use the live app with real plant data and validate the new Shift Verification Queue behavior in normal operations: missed completed hours → catch-up → manager visibility → optional offline pending/sync → closeout/archive. Any next modification must preserve the current production deployments as rollback candidates and update both handoffs before the work is considered finished.
 
 # NON-NEGOTIABLES
 Same projects/URLs. No fake data. No null→zero. No double-counted quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollbacks. Shift Roster untouched. Verify regular URLs after every deployment. Update both handoff files after every meaningful modification. Handle approvals live and keep checking until they clear.

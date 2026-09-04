@@ -85,4 +85,44 @@ Validation after correction:
 - Live Shift Handoff Guard run `33852771439`: SUCCESS.
 - Production workflow on the correction commit was intentionally skipped because the commit did not include the `[deploy-v10-production]` marker.
 
-The next production marker must promote the already-accepted Shift Verification Queue using this corrected builder, target only the existing manager/mobile projects, and remain in the live approval polling loop until Vercel authorization clears.
+The corrected builder was then promoted by release marker `c94fee2c002c1f3cac23dd778cb1ddb2300e1287`.
+
+## 2026-09-04 — Shift Verification Queue promoted successfully to production
+Production workflow run: `33852945984`.
+Successful rerun job after fresh live Vercel approval: `100962551695`.
+Result: **SUCCESS**.
+
+Deployment sequence completed exactly as designed:
+1. V10 acceptance passed.
+2. Safe in-place release builder passed using current static production shell.
+3. Live Vercel device approval cleared.
+4. Manager deployed to existing project and authority check passed.
+5. Mobile deployed to existing project.
+6. Full shared-brain/static-asset/verification-queue smoke test passed.
+
+New manager production:
+- regular URL: `https://live-shift-command-v74.vercel.app`
+- deployment: `dpl_ALaP1FtaCyBjxPRTf8e8HNg3K94y`
+- immutable URL: `https://live-shift-command-v74-rnihgr5fi-franksharpe008s-projects.vercel.app`
+- rollback candidate retained: `dpl_9ygz671ciZGXTfoDh6go9r7My77f`
+
+New mobile production:
+- regular URL: `https://live-shift-command-v741-mobile.vercel.app`
+- deployment: `dpl_4pg2tkmUSiEC9qWFKqwgdDn6yyHa`
+- immutable URL: `https://live-shift-command-v741-mobile-clje5dhr2.vercel.app`
+- rollback candidate retained: `dpl_DDgcJomaSKVfi7tAF6apJsVJgLQg`
+
+Final CI proof:
+- manager/mobile state both healthy and same shared revision `107`;
+- manager/mobile archive healthy;
+- intelligence preserved as POST-only, expected GET 405;
+- V9 browser assets served statically, no `/api/base?file=` dependency;
+- `lsc-v10-ai-world.js` present manager + mobile;
+- mobile Hourly Performance JS/CSS present;
+- verification queue module present manager + mobile;
+- no state reset or duplicate backend introduced.
+
+CI emitted:
+`SAFE V10 PROMOTION VERIFIED · shared revision 107 · browser assets static · verification queue loaded`
+
+Operational consequence: the old single-hour `VERIFY LAST HOUR` workflow is replaced by a recoverable, cross-shift verification backlog with offline pending-sync support, while AI remains explicit-use only and does not burn Cloudflare/model resources in the background.
