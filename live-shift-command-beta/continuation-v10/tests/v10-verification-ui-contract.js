@@ -1,9 +1,15 @@
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const src=fs.readFileSync(path.join(__dirname,'..','lsc-v10-verification-ui.js'),'utf8');
+const mobile=fs.readFileSync(path.join(__dirname,'..','lsc-v10-mobile.js'),'utf8');
 assert(src.includes("HOUR NEEDS VERIFICATION"));
 assert(src.includes("HOURS NEED VERIFICATION"));
 assert(src.includes("PENDING SYNC"));
 assert(src.includes('b.hidden=true'));
 assert(src.includes('MutationObserver'));
 assert(!src.includes('VERIFY LAST HOUR'));
-console.log('V10 VERIFICATION UI CONTRACT: PASS · only actionable backlog is visible and legacy label cannot persist');
+assert(!mobile.includes('VERIFY LAST HOUR'));
+assert(!mobile.includes('LAST HOUR VERIFIED'));
+assert(mobile.includes('data-v10-queue-slot="1"'));
+assert(mobile.includes('hidden aria-hidden="true"'));
+assert(mobile.includes('LSC_V10_VERIFICATION_UI?.sync?.()'));
+console.log('V10 VERIFICATION UI CONTRACT: PASS · CTA is V10-owned before paint; no legacy last-hour label can flash');
