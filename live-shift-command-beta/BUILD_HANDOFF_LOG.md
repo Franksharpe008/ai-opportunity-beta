@@ -76,3 +76,13 @@ All Vercel deployment steps were skipped. Healthy production remained unchanged 
 Corrective action: `prepare-inplace-production.mjs` now harvests the exact current V9 browser shell from normal static production paths (`/${name}`), which is the topology created by the Safari repair. Direct verification confirmed manager `/app1.js` and `/manager-intelligence.js` return HTTP 200. State/archive/intelligence proxy topology is not changed.
 
 Deployment contract now explicitly requires direct static-path harvesting and rejects `/api/base?file=` harvesting so this cannot silently regress.
+
+## 2026-09-04 — Static-shell builder correction validated
+Correction commit: `d593302429f5abd6952d258cf0e4ac9aae65b6d5`.
+
+Validation after correction:
+- Live Shift V10 Acceptance run `33852771609`: SUCCESS.
+- Live Shift Handoff Guard run `33852771439`: SUCCESS.
+- Production workflow on the correction commit was intentionally skipped because the commit did not include the `[deploy-v10-production]` marker.
+
+The next production marker must promote the already-accepted Shift Verification Queue using this corrected builder, target only the existing manager/mobile projects, and remain in the live approval polling loop until Vercel authorization clears.
