@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=n=>fs.readFileSync(path.join(root,n),'utf8');
-const standards=read('lsc-v10-standards.js'),line=read('lsc-v10-line-context.js'),mobile=read('lsc-v10-mobile.js'),war=read('lsc-v10-manager-warroom.js'),warCss=read('lsc-v10-manager-warroom.css'),report=read('lsc-v10-reporting.js'),builder=read('tools/prepare-inplace-production.mjs');
+const standards=read('lsc-v10-standards.js'),line=read('lsc-v10-line-context.js'),mobile=read('lsc-v10-mobile.js'),war=read('lsc-v10-manager-warroom.js'),warCss=read('lsc-v10-manager-warroom.css'),liveFloor=read('lsc-v10-manager-live-floor.js'),liveFloorCss=read('lsc-v10-manager-live-floor.css'),report=read('lsc-v10-reporting.js'),builder=read('tools/prepare-inplace-production.mjs');
 assert(standards.includes('lineStandards'),'per-line/per-shift standard store missing');
 assert(standards.includes('setManagerStandard'),'manager standards authority missing');
 for(const k of ['availability','performance','quality','oee','adjustedGoal'])assert(standards.includes(k),`raw metric ${k} missing`);
@@ -14,6 +14,13 @@ assert(war.includes('LIVE requires floor shift + shared line selection'),'manage
 assert(war.includes('AWAITING LINE'),'manager must distinguish active shift from confirmed running line');
 assert(war.includes('observe-intelligence-standards'),'manager authority contract missing');
 for(const token of ['[data-action="start-stop"]','[data-action="downtime"]','[data-action="scrap"]','[data-action="rework"]'])assert(war.includes(token),`manager floor control lock missing ${token}`);
+assert(liveFloor.includes('VIEW ONLY · NO FLOOR CONTROLS'),'manager Live Floor must be view-only');
+assert(liveFloor.includes("document.querySelectorAll('.hero')"),'legacy manager hero/floor surface removal missing');
+assert(liveFloor.includes('v10lf-belt'),'animated Live Floor belt markup missing');
+assert(liveFloor.includes('v10lf-gate'),'animated Live Floor scanner markup missing');
+assert(liveFloorCss.includes('.v10-manager-floor-viewonly .hero'),'legacy manager floor surface must be fully hidden');
+assert(liveFloorCss.includes('v10LfPartFlow'),'moving Live Floor part animation missing');
+assert(liveFloorCss.includes('v10LfScanner'),'Live Floor scanner animation missing');
 assert(war.includes('CROSS-SHIFT CONSTRAINT'),'cross-shift constraint view missing');
 assert(war.includes('LINE STANDARDS'),'manager line standards control missing');
 assert(warCss.includes('v10Radar'),'command-grade motion/radar animation missing');
@@ -23,5 +30,5 @@ assert(report.includes('management_world'),'report must carry mapped management 
 assert(report.includes('Teams, Jayson email and PDF'),'one-package multi-output contract missing');
 assert(report.includes('JAYSON MORNING MEETING BRIEF'),'Jayson PDF/email briefing contract missing');
 assert(!report.includes("fetch('/api/report"),'reporting must not depend on nonexistent /api/report');
-for(const asset of ['lsc-v10-standards.js','lsc-v10-line-context.js','lsc-v10-reporting.js','lsc-v10-manager-warroom.js','lsc-v10-manager-warroom.css','lsc-v10-reporting.css'])assert(builder.includes(asset),`release builder missing ${asset}`);
-console.log('V10 COMMAND + REPORTING CONTRACT: PASS · truthful floor LIVE signal · no manager floor controls · command-grade motion · same brain/theme');
+for(const asset of ['lsc-v10-standards.js','lsc-v10-line-context.js','lsc-v10-reporting.js','lsc-v10-manager-warroom.js','lsc-v10-manager-warroom.css','lsc-v10-manager-live-floor.js','lsc-v10-manager-live-floor.css','lsc-v10-reporting.css'])assert(builder.includes(asset),`release builder missing ${asset}`);
+console.log('V10 COMMAND + REPORTING CONTRACT: PASS · manager legacy floor controls removed · animated view-only Live Floor · truthful live signal · same brain/theme');
