@@ -30,25 +30,36 @@ Mobile deployment: `dpl_HAH4qUszWYVc3q2NtLWRf3n5RVUL`.
 Shared revision verified `99`; manager config goal `400`; mobile archive 200; intelligence preserved with expected GET 405; no state reset.
 
 ## 2026-09-04 — Live approval workflow made binding
-Approvals are handled synchronously: generate while Frank is present and the job is waiting, send immediately, Frank approves immediately, verify immediately, and continue in the same live loop. Never let time-sensitive approval links sit until expiration.
+Approvals are handled synchronously: generate while Frank is present and the job is waiting, send immediately, then remain in the active checking loop until approval clears. Do not wait for Frank to return and report that approval succeeded.
 
-## 2026-09-04 — Safari unstyled-page incident isolated to browser asset delivery
-Frank opened `https://live-shift-command-v741-mobile.vercel.app` in iPhone Safari and the page rendered as browser-default unstyled HTML. Screenshot confirmed HTML loaded but CSS/JS styling did not reliably apply. Direct checks at incident time returned 200 with correct `text/css` for `/api/base?file=style.css` and 200 JavaScript for V9/V10 scripts, indicating intermittent delivery/caching around the serverless browser asset bridge rather than a state/archive/intelligence failure.
+## 2026-09-04 — Safari unstyled-page incident isolated and repaired
+Frank opened `https://live-shift-command-v741-mobile.vercel.app` in iPhone Safari and the page rendered as browser-default unstyled HTML. The browser asset bridge was removed from the rendered page: exact V9 CSS/JS is now materialized as same-deployment static files while state/archive/intelligence topology remains unchanged.
 
-Repair decision:
-- do **not** change product behavior or backend architecture;
-- during build, fetch the exact working V9 browser CSS/JS once from the current public production `/api/base` endpoint;
-- copy them into the same deployment as normal static files;
-- rewrite HTML from `/api/base?file=style.css` / `/api/base?file=lsc-v8.js` / etc. to `/style.css`, `/lsc-v8.js`, `/lsc-command-v9.js`, etc.;
-- remove `/api/base` from browser-facing HTML completely;
-- preserve manager protected state/archive/intelligence OIDC proxy and mobile shared manager authority exactly as before;
-- add deployment-contract assertions and production smoke checks that fail if `/api/base?file=` remains in browser HTML;
-- verify static `style.css` and `lsc-command-v9.js` directly after deployment.
+Static repair production:
+- Manager `dpl_9ygz671ciZGXTfoDh6go9r7My77f`
+- Mobile `dpl_DDgcJomaSKVfi7tAF6apJsVJgLQg`
 
-Files modified for this repair:
-- `live-shift-command-beta/continuation-v10/tools/prepare-inplace-production.mjs`
-- `live-shift-command-beta/continuation-v10/tests/v10-deployment-contract.js`
-- `.github/workflows/live-shift-v10-production.yml`
-- both handoff files
+Direct post-deploy verification: mobile root 200; `/style.css` 200 `text/css`; `/lsc-command-v9.js` 200 JavaScript; shared state 200 revision 99; mobile archive 200; intelligence expected GET 405. The application was healthy.
 
-This repair is intentionally limited to browser asset delivery. Shared state, Plant Memory/archive, original intelligence, AI provider routing, cost policy, schedules, downtime lifecycle, quality workflows, and V10 feature logic are not being replaced.
+GitHub run `33851009681` nevertheless ended red because the smoke step used `curl | grep -q`. Once grep found the expected marker it closed the pipe, causing curl exit 23. This was a false-negative test, not a failed deployment. Workflow repair downloads each asset to a temp file first and then greps the file.
+
+## 2026-09-04 — Shift Verification Queue designed for bad shifts, bad days and offline catch-up
+User clarified that hourly verification cannot assume somebody has time every hour. A supervisor/team lead may miss several hours or effectively the whole shift because of production issues, staffing, maintenance, or connectivity.
+
+New module: `continuation-v10/lsc-v10-verification-queue.js`.
+
+Behavior:
+- Starts at `2026-09-04T04:00:00.000Z` (current V10 pilot Third Shift) so pre-feature legacy shifts do not become false backlog.
+- Every completed shift hour from that point forward remains in a Shift Verification Queue until verified.
+- Applies across First, Second and Third Shift; this is not a night-shift-only feature.
+- Queue identity is `shift id + hour index`; catch-up can survive current-shift rollover while the shift remains in shared history.
+- Oldest-first rapid entry: Good / Scrap / Rework / note → `SAVE + NEXT`.
+- Uses existing `production[]`, adds shift-hour `hourVerification[]` records and audit; no duplicate production backend.
+- Missing stays missing, never zero.
+- Verification freshness is based on `verifiedAt >= updatedAt`; if somebody edits an already verified hour later, it automatically becomes `REVERIFY` without destructive rewriting.
+- Offline entries are held in `lsc-v10-verification-outbox-v1` as `PENDING SYNC`. They do not appear to management as verified until server sync succeeds.
+- Online restore flushes the outbox to the original shift/hour, preserving human verification time and later sync time.
+- Manager Live Now gets a small verification completeness indicator from shared state.
+- AI World exposes per-hour verification trust and queue summary only on intentional AI requests. Queue operations themselves make zero model calls.
+
+New acceptance contract: `tests/v10-verification-queue-contract.js`. Deployment contract and release builder are updated to load the module on manager and mobile. The production smoke test false-negative pipe pattern is removed.

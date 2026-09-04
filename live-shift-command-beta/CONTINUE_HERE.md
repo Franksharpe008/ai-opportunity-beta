@@ -6,7 +6,7 @@
 Every meaningful modification must update this file **and** append `live-shift-command-beta/BUILD_HANDOFF_LOG.md`. `.github/workflows/live-shift-handoff-guard.yml` enforces this.
 
 ## Live approval workflow — binding
-Any approval must be handled live in the same session: generate only while Frank is present and the job is waiting, send immediately, Frank approves immediately, verify immediately, and continue the same workflow without letting the code sit and expire.
+Any approval must be handled live in the same session. Generate only while Frank is present and the job is actively waiting; send immediately; then remain in the checking loop until approval clears. Frank should not have to return and tell the assistant that approval succeeded. Continue the same workflow immediately when the job flips approved.
 
 # CURRENT PRODUCT TRUTH — 2026-09-04
 
@@ -20,15 +20,15 @@ Draft PR: `#1`
 Manager:
 - `https://live-shift-command-v74.vercel.app`
 - project `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
-- production before Safari static-asset repair: `dpl_7BTWfSwY6rsLv5U1nc2TSaifcka2`
-- rollback: `dpl_HZiAhAaH1uSG8b5f7nCMu2ZCJ54g`
+- current static-browser-asset production: `dpl_9ygz671ciZGXTfoDh6go9r7My77f`
+- rollback: `dpl_7BTWfSwY6rsLv5U1nc2TSaifcka2`
 - pre-V10 rollback: `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX`
 
 Mobile:
 - `https://live-shift-command-v741-mobile.vercel.app`
 - project `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
-- production before Safari static-asset repair: `dpl_HAH4qUszWYVc3q2NtLWRf3n5RVUL`
-- rollback: `dpl_moo8RzN8KEZoNK82CnwXEbMgpJ7D`
+- current static-browser-asset production: `dpl_DDgcJomaSKVfi7tAF6apJsVJgLQg`
+- rollback: `dpl_HAH4qUszWYVc3q2NtLWRf3n5RVUL`
 - pre-V10 rollback: `dpl_GsxQqw4seGRvtXqE1uupksyUKba9`
 
 Deprecated V10 side projects are scaffolding only. Do not extend them.
@@ -42,22 +42,33 @@ Deprecated V10 side projects are scaffolding only. Do not extend them.
 - no state reset/data wipe
 - AI World explicit-use only; zero background/hourly model calls
 
-# SAFARI / MOBILE RENDER INCIDENT — CURRENT FIX
-Frank opened the regular mobile URL in iPhone Safari and saw browser-default unstyled HTML. Screenshot confirmed the HTML page loaded but the CSS/JS browser asset layer did not reliably apply. Direct checks showed `/api/base?file=style.css` and V9 JS were healthy at inspection time, so this is treated as an intermittent browser/serverless asset-delivery problem, not a product/state/AI failure.
+# SAFARI / MOBILE RENDER INCIDENT — RESOLVED
+Frank opened the regular mobile URL in iPhone Safari and saw browser-default unstyled HTML. The fix is now production: exact V9 CSS/JS are materialized as normal static files in the same deployment instead of being browser-fetched through `/api/base`. Direct production verification returned mobile root 200, `/style.css` 200 `text/css`, V9 JS 200 `application/javascript`, state 200 revision 99, archive 200, intelligence expected GET 405.
 
-Repair rule:
-- **Do not change the product, state, archive, intelligence, or V10 behavior.**
-- During release build, fetch the exact existing V9 CSS/JS once from the current public production `/api/base` endpoint.
-- Materialize those V9 CSS/JS files as normal static files in the same manager/mobile deployment.
-- Rewrite browser HTML references from `/api/base?file=...` to local `/style.css`, `/lsc-v8.js`, `/lsc-command-v9.js`, etc.
-- `/api/base` is removed from browser-facing HTML.
-- Backend `/api/state`, `/api/archive`, `/api/intelligence` topology remains unchanged.
-- Smoke test must fail if `/api/base?file=` remains in manager/mobile HTML.
+GitHub run `33851009681` displayed failure only because its final smoke test used `curl | grep -q`; `grep` exited after finding the expected text and caused curl exit 23. Manager and mobile deployment steps had already succeeded. Treat this as a **false smoke-test failure**, not an application failure. The workflow is being corrected to download files first and grep the files afterward.
 
-Files for this repair:
-- `continuation-v10/tools/prepare-inplace-production.mjs`
-- `continuation-v10/tests/v10-deployment-contract.js`
-- `.github/workflows/live-shift-v10-production.yml`
+# SHIFT VERIFICATION QUEUE — NEXT V10 EVOLUTION
+The old `VERIFY LAST HOUR` mental model is retired for the main floor workflow. Real operations may be too busy for one-hour punctual entry, an entire shift can be chaotic, and connectivity can fail.
+
+Required behavior from the V10 pilot shift forward:
+- every completed production hour remains recoverable until verified;
+- applies to First, Second, Third, overtime/rough days — not just nights;
+- queue follows `shift id + original hour`, not whoever happens to be active later;
+- catch-up can occur hours later or after closeout while the shift still exists in shared history;
+- rapid oldest-first `Good / Scrap / Rework → SAVE + NEXT` flow;
+- missing remains missing and is never converted to zero;
+- entered-but-not-verified and verified are distinct states;
+- if a verified hour is later edited, verification is considered stale when `updatedAt > verifiedAt` and the hour returns as `REVERIFY`;
+- mobile offline outbox stores catch-up entries locally as `PENDING SYNC`; manager must not see them as verified until shared-state sync succeeds;
+- when connection returns, outbox sync writes the original shift/hour plus the human verification time and a later sync timestamp;
+- same shared `production[]`, `hourVerification[]`, audit and archive lifecycle — no second production backend;
+- zero AI calls for queueing, math, saving or syncing;
+- AI World receives verification trust/status only on an intentional AI request so Copilot can distinguish verified, unverified and stale hours.
+
+Migration cutoff: `2026-09-04T04:00:00.000Z` (start of the active V10 pilot Third Shift). Do not turn older pre-feature legacy shifts into false verification backlog.
+
+Implementation module: `continuation-v10/lsc-v10-verification-queue.js`.
+It also adds a small manager Live Now verification indicator from shared state.
 
 # ARCHITECTURE TO PRESERVE
 One shared brain:
@@ -74,7 +85,7 @@ Manager config is the only Company Goal authority. Mobile cannot edit it. `lsc-v
 Mobile Actual / Good is tappable. It opens the Hourly Performance sheet with Good, Scrap total, Rework total, optional note, progress/gap and green/amber/red hourly status. It writes existing `current.production[]`; no duplicate production backend. Missing stays missing; future hours are unavailable. Hourly Scrap/Rework totals do not create duplicate quality incidents.
 
 # AI WORLD / COST POLICY
-`lsc-v10-ai-world.js` attaches the live architecture snapshot only when a person intentionally asks Copilot/AI. No hourly polling and no autonomous model calls. Deterministic performance/recovery math is free. Existing Plant Memory/recurrence remains available to intentional AI questions.
+`lsc-v10-ai-world.js` attaches the live architecture snapshot only when a person intentionally asks Copilot/AI. No hourly polling and no autonomous model calls. Deterministic performance/recovery/verification math is free. Existing Plant Memory/recurrence remains available to intentional AI questions.
 
 # SAFE DEPLOYMENT PATH
 Use only `.github/workflows/live-shift-v10-production.yml` with `continuation-v10/tools/prepare-inplace-production.mjs`.
@@ -88,7 +99,7 @@ Opal Assembly detached Day 07:00–15:40; Night 19:00–03:40.
 Truth model: `Calendar Day → Plant Shift → Process Run → Hour → Production + Downtime + Quality + Response + Evidence + Verification`.
 
 # NEXT STEP
-Deploy and verify the Safari/static-browser-asset repair without touching the shared brain. Then use real plant data only to prove `mobile hourly write → shared state → manager reconstruction → End Shift archive → Calendar Memory`.
+Run acceptance and promote the Shift Verification Queue through the same existing manager/mobile projects. Then prove with real plant data only: missed completed hours → rapid catch-up → shared manager view → optional offline pending/sync → End Shift archive → Calendar Memory.
 
 # NON-NEGOTIABLES
-Same projects/URLs. No fake data. No null→zero. No double-counted quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollbacks. Shift Roster untouched. Verify regular URLs after every deployment. Update both handoff files after every meaningful modification. Handle approvals live.
+Same projects/URLs. No fake data. No null→zero. No double-counted quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollbacks. Shift Roster untouched. Verify regular URLs after every deployment. Update both handoff files after every meaningful modification. Handle approvals live and keep checking until they clear.
