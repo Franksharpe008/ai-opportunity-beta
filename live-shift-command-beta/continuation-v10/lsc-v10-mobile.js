@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const mobile=!!document.querySelector('[data-action="start-stop"]');if(!mobile)return;
 const C=window.LSC_V10_CORE;if(!C)return console.warn('[LSC V10 Mobile] core missing');
-const V='lsc-v10-mobile-1.2.0',AREA_KEY='lsc-v10-mobile-area';
+const V='lsc-v10-mobile-1.2.1',AREA_KEY='lsc-v10-mobile-area';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cur=()=>state?.current||null;
 const areaList=()=>state?.config?.areas||window.AREAS||[];
@@ -12,7 +12,7 @@ function setSelectedArea(a){if(!areaList().includes(a))return;try{localStorage.s
 window.LSC_V10_SELECTED_AREA=selectedArea;
 const lastProcessEntry=(area='')=>[...(cur()?.processProduction||[])].filter(p=>!area||p.area===area).sort((a,b)=>+new Date(b.updatedAt||b.timestamp||0)-+new Date(a.updatedAt||a.timestamp||0))[0]||null;
 const activeStopFor=area=>(cur()?.events||[]).find(e=>e.type==='downtime'&&!e.endedAt&&(e.affectedProcess||e.area)===area)||null;
-function lockManagerControls(){document.querySelector('[data-action="goal"]')?.remove();const goal=document.getElementById('sg');if(goal){goal.value=managerGoal();goal.disabled=true;goal.readOnly=true;const label=goal.closest('label');if(label&&!label.dataset.v10Locked){label.dataset.v10Locked='1';label.firstChild&&(label.firstChild.textContent='Company goal · manager controlled')}}}
+function lockManagerControls(){document.querySelector('[data-action="goal"]')?.remove();const kpi=document.getElementById('goal');if(kpi)kpi.textContent=managerGoal();const goal=document.getElementById('sg');if(goal){goal.value=managerGoal();goal.disabled=true;goal.readOnly=true;const label=goal.closest('label');if(label&&!label.dataset.v10Locked){label.dataset.v10Locked='1';label.firstChild&&(label.firstChild.textContent='Company goal · manager controlled')}}}
 if(typeof goalModal==='function')goalModal=function(){show('Company Goal',`<div class="info"><b>${managerGoal()}</b><small>Manager-controlled business target. Mobile uses the shared value but cannot change it.</small></div>`,'READ ONLY · MANAGER CONFIGURATION')};
 if(typeof startModal==='function'){const nativeStartV10=startModal;startModal=function(){nativeStartV10();setTimeout(lockManagerControls,0)}}
 function activeProcessSchedules(at=Date.now()){const out=[];for(const area of areaList()){const r=C.runIdentity(area,at);if(r.type==='process_schedule'&&!out.some(x=>x.id===r.id))out.push(r)}return out}
