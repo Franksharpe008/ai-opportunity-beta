@@ -116,3 +116,30 @@ Never create another V10 beta/profile/project as the product. Never treat a new 
 ### Next engineering proof
 Use real plant data only to prove:
 mobile V10 write → shared state → manager reconstruction → End Shift archive → Calendar Memory reconstruction, including `processProduction[]`, `hourVerification[]`, and hidden shift audit attribution.
+
+---
+
+## 2026-09-04 — Continuity system enforced in CI
+
+### Change
+Added `.github/workflows/live-shift-handoff-guard.yml`.
+
+Commit that introduced guard:
+`bb7bb6240e7c21742ffc52789879475d5c6c7e4b`
+
+### Purpose
+A future chat or coding session should not be able to make meaningful Live Shift Command code/workflow changes and silently forget the repo handoff.
+
+The guard checks meaningful Live Shift Command modifications and requires the same change set to update:
+- `live-shift-command-beta/CONTINUE_HERE.md`
+- `live-shift-command-beta/BUILD_HANDOFF_LOG.md`
+
+If either handoff file is missing from a meaningful change, the continuity check fails.
+
+### Current continuity topology
+- `CONTINUE_HERE.md` = canonical current truth / where to resume
+- `BUILD_HANDOFF_LOG.md` = append-only engineering history
+- `live-shift-handoff-guard.yml` = enforcement so continuity is not dependent on chat memory alone
+
+### Production impact
+None. This is repository/process protection only; it does not alter manager/mobile runtime, state, archive, or intelligence behavior.
