@@ -2,16 +2,20 @@
 (()=>{'use strict';
 const mobile=!!document.querySelector('[data-action="start-stop"]');if(!mobile)return;
 const C=window.LSC_V10_CORE;if(!C)return console.warn('[LSC V10 Mobile] core missing');
-const V='lsc-v10-mobile-1.0.0';
+const V='lsc-v10-mobile-1.1.0';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cur=()=>state?.current||null;
 const areaList=()=>state?.config?.areas||window.AREAS||[];
+const managerGoal=()=>Math.max(0,+state?.config?.shiftGoal||400);
 const lastProcessEntry=()=>[...(cur()?.processProduction||[])].sort((a,b)=>+new Date(b.updatedAt||b.timestamp||0)-+new Date(a.updatedAt||a.timestamp||0))[0]||null;
+function lockManagerControls(){document.querySelector('[data-action="goal"]')?.remove();const goal=document.getElementById('sg');if(goal){goal.value=managerGoal();goal.disabled=true;goal.readOnly=true;const label=goal.closest('label');if(label&&!label.dataset.v10Locked){label.dataset.v10Locked='1';label.firstChild&&(label.firstChild.textContent='Company goal · manager controlled')}}}
+if(typeof goalModal==='function')goalModal=function(){show('Company Goal',`<div class="info"><b>${managerGoal()}</b><small>Manager-controlled business target. Mobile uses the shared value but cannot change it.</small></div>`,'READ ONLY · MANAGER CONFIGURATION')};
+if(typeof startModal==='function'){const nativeStartV10=startModal;startModal=function(){nativeStartV10();setTimeout(lockManagerControls,0)}}
 function activeProcessSchedules(at=Date.now()){const out=[];for(const area of areaList()){const r=C.runIdentity(area,at);if(r.type==='process_schedule'&&!out.some(x=>x.id===r.id))out.push(r)}return out}
 function processCardHtml(){const s=cur(),last=lastProcessEntry(),active=activeProcessSchedules();let title='Process evidence ready',stateText='READY',text='Record Good Actual only when real process production is known.';if(!s||s.actualEnd){title='No active shift';stateText='WAITING';text='Start or join the active shift before recording process Actual.'}else if(active.length){title=active.map(x=>x.name).join(' · ');stateText='RUN ACTIVE';text=last?`Last: ${last.area} · ${C.goodVal(last.good)??'—'} good · ${last.hourStart||''}`:'Detached/process schedule is active. Process Actual has not been attributed yet.'}else if(last){title=last.runName||last.area;stateText='CAPTURED';text=`Last: ${last.area} · ${C.goodVal(last.good)??'—'} good · ${last.hourStart||''}`}return`<div class="cardHead"><div><div class="eyebrow">Process / Run · V10</div><div class="hourTitle">${esc(title)}</div></div><div class="hourState">${esc(stateText)}</div></div><div class="v10m-body"><p>${esc(text)}</p><button class="btn primary" id="v10mProcessActual">PROCESS ACTUAL</button></div>`}
 function installCard(){if(document.getElementById('v10mProcessCard'))return;const currentHour=[...document.querySelectorAll('.card')].find(x=>x.querySelector('.eyebrow')?.textContent?.trim()==='Current Hour'),anchor=currentHour||document.querySelector('.hero');if(!anchor)return;anchor.insertAdjacentHTML('afterend','<section class="card v10m-process" id="v10mProcessCard"></section>');renderCard()}
-function renderCard(){const card=document.getElementById('v10mProcessCard');if(!card)return;card.innerHTML=processCardHtml();const b=document.getElementById('v10mProcessActual');if(b)b.onclick=openActual}
-function contextLine(area,at){const r=C.runIdentity(area,at);return r.type==='process_schedule'?`${r.name} · ${r.workDate}`:`${r.name} · ${r.workDate}`}
+function renderCard(){lockManagerControls();const card=document.getElementById('v10mProcessCard');if(!card)return;card.innerHTML=processCardHtml();const b=document.getElementById('v10mProcessActual');if(b)b.onclick=openActual}
+function contextLine(area,at){const r=C.runIdentity(area,at);return`${r.name} · ${r.workDate}`}
 function form(){const p=C.parts(),areas=areaList();return`<div class="v10m-form"><div class="info"><b>Process-level Good Actual</b><small>Separate from shift Actual. Scrap / Rework stay in the existing quality workflow.</small></div><label class="field">Process / area<select id="v10mArea">${areas.map(a=>`<option>${esc(a)}</option>`).join('')}</select></label><div class="info" id="v10mRunContext"><small></small></div><label class="field">Good Actual<input id="v10mGood" type="number" min="0" inputmode="numeric" placeholder="Good pieces for this process hour"></label><label class="field">Plant hour · Chicago<input id="v10mHour" type="datetime-local" value="${p.date}T${String(p.hour).padStart(2,'0')}:00"></label><label class="field">Evidence note · optional<textarea id="v10mNote" placeholder="MES reading, scanner count, run note, correction reason"></textarea></label><div class="warn">Saving the same process/run/hour again corrects that hour instead of double-counting it. Previous value stays in correction history.</div><div class="sheetActions"><button class="btn primary" id="v10mSave">SAVE PROCESS ACTUAL</button></div></div>`}
 function refreshContext(){const area=document.getElementById('v10mArea')?.value,h=document.getElementById('v10mHour')?.value,box=document.getElementById('v10mRunContext');if(!area||!box)return;const at=C.plantLocalEpoch(h);box.innerHTML=`<b>${esc(contextLine(area,at))}</b><small>${esc(C.hourKey(at))} · shared with manager web</small>`}
 function openActual(){if(!cur()||cur().actualEnd)return typeof startModal==='function'?startModal():null;show('Process Actual',form(),'V10 · PROCESS RUN / HOURLY EVIDENCE');document.getElementById('v10mArea').onchange=refreshContext;document.getElementById('v10mHour').onchange=refreshContext;refreshContext();document.getElementById('v10mSave').onclick=saveActual}
@@ -21,6 +25,6 @@ function injectDetail(){const host=document.getElementById('modalBody');if(!host
 if(typeof detail==='function'){const nativeDetailV10=detail;detail=function(){nativeDetailV10();setTimeout(injectDetail,0)}}
 const nativeRenderV10=typeof render==='function'?render:null;if(nativeRenderV10){render=function(){nativeRenderV10();renderCard()}}
 window.LSC_V10_OPEN_PROCESS_ACTUAL=openActual;
-installCard();setInterval(renderCard,4000);
-console.info(`[LSC] ${V} active · simple mobile process/run Actual integrated`);
+lockManagerControls();installCard();setInterval(renderCard,4000);
+console.info(`[LSC] ${V} active · mobile evidence flows up · manager configuration stays read-only`);
 })();
