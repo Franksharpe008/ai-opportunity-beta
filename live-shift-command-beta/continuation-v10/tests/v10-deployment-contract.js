@@ -13,13 +13,14 @@ assert(!src.includes("text(`${live}/api/base?file=${encodeURIComponent(name)}`)"
 assert(src.includes('localizeBaseRefs'));
 assert(!src.includes('writeBase('));
 assert(src.includes("'lsc-v10-ai-world.js'"));
+assert(src.includes("'lsc-v10-ai-reliability.js'"));
 assert(src.includes("'lsc-v10-resolution-guard.js'"));
 assert(src.includes("'lsc-v10-hourly-performance.js'"));
 assert(src.includes("'lsc-v10-hourly-performance.css'"));
 assert(src.includes("'lsc-v10-verification-queue.js'"));
 assert(src.includes("'lsc-v10-verification-ui.js'"));
-assert(src.includes("MOBILE_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-resolution-guard.js'"));
-assert(src.includes("MANAGER_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-resolution-guard.js'"));
+assert(src.includes("MOBILE_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-ai-reliability.js','lsc-v10-resolution-guard.js'"));
+assert(src.includes("MANAGER_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-ai-reliability.js','lsc-v10-resolution-guard.js'"));
 assert(src.includes("projectId:ORG")===false);
 assert(src.includes("projectId},null,2"));
-console.log('V10 DEPLOYMENT CONTRACT: PASS · static shell + shared brain + verification backlog + resolution guard preserved');
+console.log('V10 DEPLOYMENT CONTRACT: PASS · static shell + shared brain + verification + resolution + AI reliability preserved');
