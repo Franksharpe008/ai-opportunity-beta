@@ -72,18 +72,61 @@ Staged repair:
 - legacy `VERIFY LAST HOUR` / `LAST HOUR VERIFIED` strings are removed from the mobile renderer entirely;
 - V10 verification UI becomes the sole owner of CTA visibility, label and click behavior;
 - `renderInline()` synchronously calls `LSC_V10_VERIFICATION_UI.sync()` after rebuild;
-- test commit `a5f05bad9173d9a474a65a2ede28ac1dd465688c` now fails if legacy last-hour wording returns to either module or if the slot is not hidden-before-paint.
+- test commit `a5f05bad9173d9a474a65a2ede28ac1dd465688c` fails if legacy last-hour wording returns or if the slot is not hidden-before-paint.
 
-Canonical handoff updated in `5421db5e2f4bf690183302157a6eb651249f20e2`.
+Initial Acceptance caught an outdated integration assertion that still required legacy `VERIFY LAST HOUR`; integration contract corrected in `44675694b433f3c8957a24e4fc37fc6c07f07460`.
 
-Initial full Acceptance on branch head caught one **outdated test contract**, not a runtime defect: `tests/v10-integration-contract.js` still required `VERIFY LAST HOUR` to exist. The new dedicated verification UI contract passed. Handoff Guard also passed.
+Premium-only release marker `63fdf0e7ec30313ab82ef284fb71c5e76b6cd6fc` created production run `33859375212`, but the run was cancelled at `Authenticate Vercel` while later changes arrived. Job `100980038733` proves manager deploy, manager authority check, mobile deploy and smoke were all skipped. Therefore production remained on the resolution-guard build with revision 110.
 
-Correction commit `44675694b433f3c8957a24e4fc37fc6c07f07460` updates the integration contract to require the premium design instead:
-- no `VERIFY LAST HOUR`;
-- no `LAST HOUR VERIFIED`;
-- hidden-before-paint queue slot;
-- synchronous `LSC_V10_VERIFICATION_UI.sync()` ownership.
+## 2026-09-04 — AI Brief / Shift Copilot live failure diagnosed
+Frank live-tested shift closeout AI Brief and Ask Copilot before his manager presentation. The UI did not return useful output.
 
-Canonical handoff updated again in `877426c8fb9e70275d835e810453f34a4366bdaa`.
+Manager live logs on production `dpl_GjQVF6dPZCAksy4gBED5tAej3uxd` showed:
+- 09:34:05 POST `/api/intelligence` → 502
+- 09:34:42 POST `/api/intelligence` → 502
+- 09:35:17 POST `/api/intelligence` → 502
 
-Next: rerun V10 Acceptance + Handoff Guard on the new branch head. If green, promote through the existing in-place production workflow only, handle Vercel approval live, verify regular URLs, and append final deployment IDs. Do not claim production flicker fixed before that smoke pass.
+The preserved original V9 intelligence deployment `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX` logged each as task `summary`, code `cloudflare_gateway_output_missing`. Earlier AI calls at 09:31:12 and 09:31:15 were 200. Shared state remained healthy at revision `110` and the resolved RB10 event remained fully captured. Conclusion: provider/gateway output reliability failure, not a lost-data/shared-brain failure.
+
+## 2026-09-04 — Real-AI-first reliability layer staged without paid verification
+Added `lsc-v10-ai-reliability.js` version `1.0.1`.
+
+Behavior:
+- existing `/api/intelligence` remains the only real model path and gets first chance;
+- applies only to intentional `summary` and `copilot` requests;
+- if upstream is non-2xx, gateway-empty, network-failed or timed out, **no second model call** is made;
+- fallback is built from live shared state + `LSC_V10_AI_WORLD` and returns the shape legacy AI Brief/Copilot expects;
+- fallback `audit.usageUnits = 0` and `gatewayFallback = true`;
+- missing Actual remains missing; recovery is not guessed;
+- includes goal, actual/missing truth, unique downtime, Scrap/Rework, verification backlog, prior-shift overlap, latest confirmed resolution and management attention;
+- capture watchdog on `#v8Ask` handles the case where legacy Copilot UI fails before sending the request;
+- no background polling, no second provider/router/database.
+
+AI World upgraded to `1.2.0` so deliberate `summary` and `copilot` requests receive hourly truth, verification trust, recovery math, process runs, prior shift/handoff overlap and resolution memory.
+
+Wiring/contract commits include:
+- reliability file `fa92b3edbf269be2b14afcd6e5168f2fe17dffb3`
+- AI World summary/resolution memory `233d4e2e1b1d134fb5124f3d189a59b252ce4c15`
+- release builder wiring `c7480b17dd42aeff5fe21bb5656ef73cc61b1c09`
+- safe in-place production wiring `897ee44f3ad8d3f495929c8de8416e487b5c91f7`
+- global runtime state correction `db0ed080d7f07abcf460db1cbe644f71e851fc2b`
+- mocked reliability regression `a0873e05d54111e7e19ef2c5c52179bb5d296227`
+- acceptance runner `d0fc22c12f0fa811448763706e954f406fff11b0`
+- integration/deployment/release-builder contracts updated through `4f574f4d3490204708d61f9f54ff3008183d79a4` and follow-up expectation corrections.
+
+One initial mocked run failed only because two test strings were too strict; runtime design was unchanged. Expectations were corrected. V10 Acceptance run `33860204477`, job `100982659538`: **SUCCESS**.
+
+Critical cost rule from Frank: **do not run real AI POST requests for deployment verification.** The successful acceptance is local/mock. The assistant stopped real-model testing. Frank will test AI Brief and Copilot live himself after production deployment.
+
+## 2026-09-04 — Production smoke hardened without model spend
+Workflow change `b07d99aa7565e86b0ba2d5f245d441fe9ac601b1` adds non-paid production checks for the combined release:
+- `lsc-v10-ai-reliability.js` present manager + mobile;
+- source contains `real AI primary` and `zero second model call`;
+- mobile is `lsc-v10-mobile-1.3.1`;
+- mobile source contains neither legacy `VERIFY LAST HOUR` nor `LAST HOUR VERIFIED`;
+- AI World, resolution guard, verification queue/UI, static assets, shared state and archive remain healthy;
+- `/api/intelligence` check remains GET→405 only; **no POST is made by smoke**.
+
+Canonical handoff update: `501d4aee4407c224b672699ab59efd5ec85661f3`.
+
+Next: create one combined `[deploy-v10-production]` marker for premium CTA + AI reliability, watch the existing-project job live, handle Vercel approval while actively waiting, run only non-paid smoke, then let Frank perform the actual AI Brief/Copilot inference test in the app. Append exact manager/mobile deployment IDs and outcome afterward.
