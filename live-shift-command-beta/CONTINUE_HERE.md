@@ -1,101 +1,207 @@
 # LIVE SHIFT COMMAND — CONTINUE HERE FIRST
 
-> Continuity contract. Do **not** ask Frank to retrain the project. Read this file, inspect the recovery branch and the existing live projects, then continue from the exact next step.
+> Canonical current-state handoff. A new chat, Codex session, or engineer must read this file **before changing Live Shift Command**. Do not ask Frank to retrain the project from scratch.
 
-## Product direction
+## Mandatory continuity protocol
 
-**V9 becomes V10 on the same Live Shift Command product and the same existing URLs/projects.**
+Every meaningful modification to Live Shift Command must finish with BOTH of these repo updates:
 
-Do not create another product/profile/project for the working application. The separate V10 beta projects created during recovery were a deployment mistake and are **not** the target architecture. Do not send Frank or Emilio to them as the main app.
+1. Update this file so it reflects the new **current truth**.
+2. Append a dated entry to `live-shift-command-beta/BUILD_HANDOFF_LOG.md` recording what changed, deployment IDs, verification, rollback points, and any open issue.
+
+A modification is **not complete** until the handoff is updated.
+
+This protocol exists specifically to prevent future chats from losing architectural context and accidentally rebuilding, replacing, or bypassing working systems.
+
+---
+
+# CURRENT PRODUCT TRUTH — 2026-09-04
+
+## One evolving application
+
+**V8 → V9 → V10 is one Live Shift Command application.**
+
+V10 evolves the existing product in place. It is not a parallel beta product, not a clean-slate rebuild, and not a replacement intelligence stack.
+
+Do not create another product/profile/project for the working application unless Frank explicitly changes direction.
 
 Repo: `Franksharpe008/ai-opportunity-beta`
-Branch: `live-shift-command-v10-recovery`
+Working branch: `live-shift-command-v10-recovery`
 Draft PR: `#1`
-Never deploy stale `main` over the live CLI/prebuilt apps.
 
-## The two app surfaces that matter
+Do not deploy stale `main` over the working production applications.
 
-### Manager — SAME EXISTING PROJECT
+---
+
+# THE ONLY TWO PRODUCTION SURFACES THAT MATTER
+
+## Manager — existing production project
 - URL: `https://live-shift-command-v74.vercel.app`
 - project: `live-shift-command-v74`
-- project id: `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
-- V9 working behavior is the foundation that must be evolved in place to V10.
+- project ID: `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
+- current V10 production deployment: `dpl_HZiAhAaH1uSG8b5f7nCMu2ZCJ54g`
+- preserved pre-V10 rollback deployment: `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX`
 
-### Mobile — SAME EXISTING PROJECT
+## Mobile — existing production project
 - URL: `https://live-shift-command-v741-mobile.vercel.app`
 - project: `live-shift-command-v741-mobile`
-- project id: `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
-- latest known V9 production deployment before V10 promotion: `dpl_GsxQqw4seGRvtXqE1uupksyUKba9`
-- this same mobile cockpit is where V10 belongs.
+- project ID: `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
+- current repaired V10 production deployment: `dpl_moo8RzN8KEZoNK82CnwXEbMgpJ7D`
+- preserved pre-V10 rollback deployment: `dpl_GsxQqw4seGRvtXqE1uupksyUKba9`
 
-### Separate beta projects
-`live-shift-command-v10-mobile-beta` and `live-shift-command-v10-manager-beta` were useful only as recovery smoke-test environments. Treat them as deprecated test scaffolding, not the product. Do not extend the architecture around them.
+## Deprecated side projects
+`live-shift-command-v10-mobile-beta` and `live-shift-command-v10-manager-beta` are not the product. Treat them only as old smoke-test scaffolding. Do not extend architecture around them and do not send Frank/Emilio there as the main app.
 
-## UX rule Frank restated
+---
 
-**Keep the shine. Keep it simple. Intelligence should grow underneath the cockpit, not turn the phone into a dashboard.**
+# CURRENT PRODUCTION HEALTH
 
-Latest mobile simplification commit removes the large V10 process card / six line tiles / four-button control block.
+The recovery completed after a deployment-path mistake briefly disrupted mobile archive routing.
 
-V10 mobile now belongs inside the existing cockpit like this:
-- existing hero stays
-- existing KPI cards stay
-- existing Current Hour card stays
-- inside Current Hour: one compact LINE selector + RUN/DOWN/DETACHED status
-- two compact actions: `VERIFY LAST HOUR` and `MORE`
-- `MORE` contains secondary tools such as Process Actual, line-specific downtime/manage, and bounded AI command
-- existing main Downtime workflow remains the primary downtime entry
-- AI should primarily feel like the existing Shift Copilot, not a second AI interface
-- no giant manager intelligence on mobile
+Verified after repair:
 
-## Shared plant truth
+### Shared state
+- manager `/api/state` → `200`
+- mobile `/api/state` → `200`
+- both surfaces read the same shared ledger
+- latest verified revision: `98`
+- no state reset/data wipe occurred
+
+### Permanent Plant Memory/archive
+- manager `/api/archive` → `200`
+- mobile `/api/archive` → `200`
+- mobile now returns the same permanent archived shift records through the shared authority
+- the temporary mobile archive `401` was repaired
+
+### Intelligence
+- original `/api/intelligence` implementation is preserved
+- manager route reaches the preserved intelligence backend
+- mobile route reaches the preserved intelligence backend
+- health probes using `GET` correctly return `405 method_not_allowed`; this is expected because production intelligence calls use `POST`
+- do not waste paid AI calls just to prove a route exists unless a real POST test is necessary
+
+### Runtime
+- manager final health pass: no current application runtime failures
+- mobile final health pass: no current 401/403/5xx application failures
+- possible Node `DEP0169 url.parse()` warning on `/api/base` is a warning, not a failed application request; do not destabilize architecture solely to silence it
+
+---
+
+# ARCHITECTURE THAT MUST BE PRESERVED
+
+The accumulated V8/V9 system is infrastructure, not disposable legacy code.
+
+V10 must continue to sit **after and on top of** the existing V8/V9 architecture.
+
+Preserve:
+- shared manager/mobile state
+- `/api/state`
+- `/api/archive`
+- `/api/intelligence`
+- voice capture
+- photo/vision capture
+- typed issue capture
+- classify/enrich/vision/quality/copilot/transcribe intelligence tasks
+- AI usage accounting
+- downtime codes
+- downtime lifecycle
+- evidence
+- responder timing
+- response ownership
+- Scrap/Rework quality workflow
+- containment/solution/recovery/permanent verification flow
+- Shift Recall
+- Live Now / hot memory
+- permanent Calendar Memory
+- effective-dated schedules
+- Third Shift cross-midnight logic
+- detached process schedule identity
+- End Shift archive behavior
+- manager intelligence
+- current visual language and simple mobile cockpit
+
+Do not create a second AI provider, second state system, second archive system, or second manager-configuration authority.
+
+### Shared-brain rule
+Conceptually:
+
+`Manager Web + Mobile Floor → same shared state / archive / intelligence architecture → V10 adds process/hour truth and intelligence without replacing the foundation.`
+
+Manager remains the authority for rules/configuration/intelligence view.
+Mobile remains the floor evidence surface.
+
+---
+
+# UX RULE FRANK RESTATED
+
+**Keep the shine. Keep it simple. Intelligence grows underneath the cockpit.**
+
+Mobile must not become a giant dashboard.
+
+Existing mobile structure stays:
+- hero
+- KPI cards
+- Current Hour card
+- active downtime
+- Shift Copilot
+- Scrap/Rework/Shift Detail
+- bottom navigation
+
+V10 integrates compactly inside the existing flow:
+- one LINE selector
+- RUNNING / DOWN / DETACHED state
+- `VERIFY LAST HOUR`
+- `MORE`
+- Process Actual inside secondary tools
+- line-specific downtime/manage inside secondary tools
+- bounded AI command inside secondary tools / aligned with Shift Copilot
+
+Manager goal remains read-only on mobile.
+
+Latest known mobile V10 integration version:
+`lsc-v10-mobile-1.3.0`
+
+---
+
+# SHARED PLANT TRUTH
 
 Timezone: `America/Chicago`
-Operating day: 07:00 → 06:59:59 next calendar day
+Operating day: `07:00 → 06:59:59` next calendar day
 
 Plant shifts:
-- First Shift 07:00–15:00
-- Second Shift 15:00–23:00
-- Third Shift 23:00–07:00
+- First Shift `07:00–15:00`
+- Second Shift `15:00–23:00`
+- Third Shift `23:00–07:00`
 
 Detached process schedules:
-- Opal Assembly Day 07:00–15:40
-- Opal Assembly Night 19:00–03:40
+- Opal Assembly Day `07:00–15:40`
+- Opal Assembly Night `19:00–03:40`
 
-A detached process run may cross plant-shift ownership. Preserve one continuous process run while stamping every event/hour with the plant shift that owned that moment.
+A detached process run may cross plant-shift ownership. Preserve one continuous process run while stamping every event/hour with the plant shift responsible at that moment.
 
-## V9 capabilities V10 must preserve
+Plant truth model:
 
-- shared manager/mobile `/api/state`
-- all existing downtime codes
-- voice/photo/type evidence
-- current `/api/intelligence` classify/enrich/vision/quality/copilot/transcribe path
-- 4M cause model and responder ownership
-- response timing / responders
-- Scrap/Rework quality workflow
-- Resolve + Verify
-- Live Now / hot memory
-- Calendar Memory / archive
-- effective-dated schedules
-- Third Shift cross-midnight attribution
-- detached process schedule identity
-- Shift Recall / prior-shift continuity
-- End Shift archive
-- manager intelligence
-- current visual design language and simple floor flow
+`Calendar Day → Plant Shift → Process Run → Hour → Production + Downtime + Quality + Response + Evidence + Verification`
 
-## V10 additions already implemented on recovery branch
+---
 
-### Shared process/hour evidence
+# V10 IMPLEMENTED CAPABILITIES
+
+V10 modules live under:
+`live-shift-command-beta/continuation-v10/`
+
+## Shared process/hour evidence
 `current.processProduction[]`
-- process/run/hour identity
+
+Rules:
+- explicit process/run/hour identity
 - Good Actual remains explicit
 - missing Actual stays missing
-- generic shift Actual is never redistributed to process Actual
-- same process/run/hour uses upsert + correction history
-- Scrap/Rework root-cause workflow is not double counted
+- never redistribute generic shift Actual into process Actual
+- same process/run/hour uses correction/upsert behavior
+- quality workflow is not double-counted
 
-### Time Truth
+## Time Truth
 `continuation-v10/lsc-v10-floor-ops.js`
 
 Downtime supports:
@@ -107,70 +213,108 @@ Downtime supports:
 
 Actual equipment time is separate from record-entry time. Duration uses actual stop/restoration time.
 
-### Hidden change attribution
-Do not clutter the profile/UI yet.
+## Hidden change attribution
+For beta, changes can be stamped by shift rather than individual user.
 
-Beta actor schema:
+Example:
 `{ mode:'shift_beta', shift:'Third Shift', actorId:'third_shift', userId:null }`
 
-Writes can carry `changedBy`, `changedAt`, `audit[]`; current shift carries hidden audit history. For now attribution is First/Second/Third Shift. Later authenticated person identity fills `userId` without changing the historical model.
+Writes can carry:
+- `changedBy`
+- `changedAt`
+- `audit[]`
 
-### Hour Truth
-`VERIFY LAST HOUR` writes:
+Later authenticated identity can populate `userId` without changing the historical schema.
+
+Actor attribution means **who made the edit**, not necessarily who owned the event when it occurred.
+
+## Hour Truth
+`VERIFY LAST HOUR` records:
 - selected process/run/hour
 - hourly goal
 - Good Actual
 - Scrap
 - Rework
 - overlapping downtime event links
-- verified status/time
+- verified state/time
 - shift actor
 - correction history
 - `current.hourVerification[]`
 
-### Bounded AI operational commands
-AI may interpret explicit supervisor instructions, but deterministic V10 owns time conversion, operating date, plant shift, process run, validation, upsert and audit.
+## Bounded AI operational commands
+AI may interpret supervisor language, but deterministic V10 code owns:
+- Chicago time
+- operating date
+- plant shift
+- process run
+- validation
+- upsert/correction
+- audit
 
-Supported bounded mutations:
+Allowed bounded mutations:
 - backdate/start downtime
 - backdate/end downtime
-- verify a completed process hour
+- verify completed process hour
 
-AI still cannot autonomously alter company goal/rate, schedules, authority, archive deletion, or convert a capacity recommendation into configuration.
+AI may not autonomously change:
+- company target/rate
+- schedule config
+- authority roles
+- permanent archive deletion
+- capacity recommendation into config
 
-## Manager V10 branch modules
+---
 
+# MANAGER V10 CAPABILITIES
+
+Preserve existing manager intelligence and extend it with:
 - Calendar Day Reconstruction
 - shift → process run → hour → evidence
 - process Actual
 - cross-shift capacity/rate intelligence
 - weak-shift detection
 - downtime / quality / rate-loss decomposition
-- 4M Pareto + optional manager-only 6M refinement
-- drilldown to incidents/actions/evidence/verification
-- `HOLD`, `INVESTIGATE`, `TRIAL HIGHER RATE`
-- existing Morning Meeting Brief upgraded in place
+- 4M Pareto
+- optional manager-only 6M refinement: Measurement + Environment
+- drilldown to incidents/evidence/actions/verification
+- decisions: `HOLD`, `INVESTIGATE`, `TRIAL HIGHER RATE`
+- Morning Meeting Brief upgraded in place
 
-Brief order:
-STATUS → WHAT HAPPENED → WHAT CHANGED → WHAT REPEATED → WHAT WORKED → OPPORTUNITY → RESPONSE → MANAGEMENT ATTENTION → PROOF.
+Morning Meeting Brief section order must remain exactly:
+1. STATUS
+2. WHAT HAPPENED
+3. WHAT CHANGED
+4. WHAT REPEATED
+5. WHAT WORKED
+6. OPPORTUNITY
+7. RESPONSE
+8. MANAGEMENT ATTENTION
+9. PROOF
 
-## Company Goal authority
+Current correct capacity conclusion remains `HOLD / BUILDING` until trustworthy cross-shift hourly Actual is dense enough.
 
-Manager config is authoritative. Mobile cannot edit the company goal.
+Missing Actual must not be treated as zero.
 
-At last verified shared state:
+---
+
+# COMPANY GOAL AUTHORITY
+
+Manager configuration is authoritative.
+Mobile cannot edit company goal.
+
+Last verified shared config:
 - `state.config.shiftGoal = 400`
-- an older active Third Shift record contained legacy `shiftGoal:265`
 
-V10 mobile should display manager config 400 without silently rewriting historical raw shift values just for appearance.
+An older active shift object may still contain legacy `shiftGoal:265`. Do not silently rewrite historical raw shift values just for display. Mobile should display authoritative manager config 400.
 
-## Capacity truth
+---
 
-Current correct manager conclusion remains `HOLD / BUILDING` because trustworthy cross-shift hourly Actual is still sparse. Untouched legacy zero rows and missing Actual are excluded.
+# TESTS / QUALITY GATE
 
-## Tests
+GitHub Actions workflow:
+`Live Shift V10 Acceptance`
 
-GitHub Actions `Live Shift V10 Acceptance` guards:
+Guards include:
 - V10 syntax
 - process/run logic
 - retro start/end
@@ -179,28 +323,57 @@ GitHub Actions `Live Shift V10 Acceptance` guards:
 - capacity decision guardrails
 - operating brief
 - no manager intelligence auto-writing rate/goal
-- release integration contract
+- integration/release contracts
 
-After every mobile simplification or deployment change, rerun this acceptance suite before production promotion.
+Last known green acceptance before production recovery:
+- run `#85`
+- commit `2c2fe26eb821066c40b64548a2e060b7070b342b`
 
-## Exact next step
+Every meaningful code change should rerun this suite before production promotion when the changed files are covered by the workflow.
 
-1. Keep simplifying around the existing mobile cockpit; do not create more V10 projects.
-2. Promote the tested V10 files to **the existing mobile Vercel project** `live-shift-command-v741-mobile`, preserving the same URL.
-3. Promote manager V10 modules to **the existing manager Vercel project** `live-shift-command-v74`, preserving the same URL.
-4. Verify existing visual behavior first, then V10 line selector / time truth / hourly verification.
-5. Use real plant data only to prove mobile write → shared state → manager reconstruction.
-6. Prove `processProduction[]`, `hourVerification[]`, and hidden audits survive End Shift → permanent archive → Calendar reconstruction.
-7. Keep the last known V9 deployments available as rollback points during promotion.
+---
 
-## Non-negotiables
+# EXACT NEXT ENGINEERING PROOF
 
-- Same product, same existing projects/URLs.
+Do not redesign the product next. Prove the architecture with **real plant data only**.
+
+Next proof chain:
+
+1. Use the existing regular mobile URL.
+2. Create one real V10 floor write during actual production.
+3. Verify write reaches the shared `/api/state` ledger.
+4. Verify hidden shift attribution is present.
+5. Verify manager regular URL reconstructs the same process/run/hour truth.
+6. Complete End Shift through the existing workflow.
+7. Verify permanent `/api/archive` contains the same V10 fields.
+8. Open Calendar Memory / reconstruction and prove those fields survived archive.
+
+Specifically prove persistence of:
+- `processProduction[]`
+- `hourVerification[]`
+- time-truth corrections
+- hidden audit attribution
+- process-run identity across detached schedules
+
+Do not create fake production data to make this test pass.
+
+---
+
+# NON-NEGOTIABLE BUILD RULES
+
+- Same product, same existing projects, same regular URLs.
 - No clean-slate rewrite.
+- No parallel beta as the product.
 - No fake plant data.
-- No silent null→zero.
+- No silent null → zero.
 - No double-counted quality.
-- No duplicate AI/provider/config systems.
+- No duplicate AI/provider/config/state/archive systems.
 - Manager rules flow down; floor evidence flows up.
-- Mobile simplicity wins over showing every capability at once.
-- Shift Roster remains separate and untouched.
+- Mobile simplicity wins over exposing every capability.
+- Preserve all downtime codes.
+- Canonical 4M remains Man/People, Machine, Material, Method.
+- Optional 6M is manager-only refinement when useful.
+- Shift Roster stays separate and untouched.
+- Preserve rollback deployment IDs before production changes.
+- Verify regular production URLs after every deployment.
+- Update `CONTINUE_HERE.md` + append `BUILD_HANDOFF_LOG.md` after every meaningful modification.
