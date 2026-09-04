@@ -101,21 +101,29 @@ Exact V9 CSS/JS are static files in the same production deployment. Browser-faci
 # CURRENT WORK IN PROGRESS — PREMIUM VERIFICATION CTA, NO FLICKER
 Frank observed the mobile CTA still flashing every few seconds between legacy `VERIFY LAST HOUR` and the correct backlog count such as `5 HOURS NEED VERIFICATION`.
 
-Root cause found: `lsc-v10-mobile.js` rebuilt `#v10mVerifyHour` every 4 seconds with legacy last-hour text, then `lsc-v10-verification-ui.js` corrected it afterward. The MutationObserver could not prevent that first painted legacy frame.
+Root cause: `lsc-v10-mobile.js` rebuilt `#v10mVerifyHour` every 4 seconds with legacy last-hour text, then `lsc-v10-verification-ui.js` corrected it after paint.
 
-Repair now staged on branch:
-- `lsc-v10-mobile.js` version `1.3.1` renders the verification slot **hidden + empty before paint**;
+Staged repair:
+- `lsc-v10-mobile.js` version `1.3.1` renders the verification slot hidden + empty before paint;
 - mobile renderer contains no `VERIFY LAST HOUR` and no `LAST HOUR VERIFIED` strings;
 - V10 verification UI is the sole owner of visibility/text/click behavior;
 - `renderInline()` calls `LSC_V10_VERIFICATION_UI.sync()` synchronously after rebuilding the inline area;
 - visible states are only actionable truth: `1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, `N HOURS PENDING SYNC`, or no CTA when clear;
-- regression test now fails if legacy last-hour text is reintroduced into either verification UI or mobile renderer.
+- regression tests fail if legacy wording returns or hidden-before-paint ownership is removed.
 
-Implementation commits so far:
-- mobile source fix `9d45dc82fb2299291c706f02e41a18c08805e27d`
-- regression test `a5f05bad9173d9a474a65a2ede28ac1dd465688c`
+Implementation:
+- source fix `9d45dc82fb2299291c706f02e41a18c08805e27d`
+- verification UI regression test `a5f05bad9173d9a474a65a2ede28ac1dd465688c`
+- canonical handoff `5421db5e2f4bf690183302157a6eb651249f20e2`
+- build log `8707c9e23565e27d51329037452367f30eeb25e6`
 
-**Not production yet.** Next step: update both handoffs, run full V10 Acceptance + Handoff Guard, then promote only through `.github/workflows/live-shift-v10-production.yml` with live approval and final regular-URL smoke. Do not call the flicker fixed in production until that passes.
+Gate history:
+- Handoff Guard on `8707c9e...`: SUCCESS.
+- V10 Acceptance initially failed only because `tests/v10-integration-contract.js` still asserted that mobile **must contain** `VERIFY LAST HOUR`.
+- This was an outdated test contract, not a runtime code failure.
+- Integration contract corrected in `44675694b433f3c8957a24e4fc37fc6c07f07460` to require the premium behavior: no legacy last-hour wording, hidden-before-paint queue slot, synchronous V10 verification sync.
+
+**Not production yet.** Next step: update both handoffs for the contract correction, rerun full V10 Acceptance + Handoff Guard, then promote only through `.github/workflows/live-shift-v10-production.yml` with live approval and final regular-URL smoke. Do not call the flicker fixed in production until that passes.
 
 # SAFE DEPLOYMENT PATH
 Use only `.github/workflows/live-shift-v10-production.yml` with `continuation-v10/tools/prepare-inplace-production.mjs`.
