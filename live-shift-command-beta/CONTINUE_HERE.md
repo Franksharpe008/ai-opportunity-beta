@@ -1,293 +1,120 @@
 # LIVE SHIFT COMMAND — CONTINUE HERE FIRST
 
-> Canonical current-state handoff. A new chat, Codex session, or engineer must read this file **before changing Live Shift Command**. Do not ask Frank to retrain the project from scratch.
+> Canonical current-state handoff. Read this before changing Live Shift Command. Do not ask Frank to retrain the project from scratch.
 
 ## Mandatory continuity protocol
-
-Every meaningful Live Shift Command modification must finish with BOTH repo updates:
-
-1. Update this file with the new **current truth**.
-2. Append the modification to `live-shift-command-beta/BUILD_HANDOFF_LOG.md` with files changed, commit, deployment IDs, verification, rollback points, and open issues.
-
-A meaningful modification is not complete until the handoff is updated. `.github/workflows/live-shift-handoff-guard.yml` enforces this on the recovery branch so continuity does not depend on chat memory alone.
-
----
+Every meaningful modification must update this file **and** append `live-shift-command-beta/BUILD_HANDOFF_LOG.md`. `.github/workflows/live-shift-handoff-guard.yml` enforces this.
 
 # CURRENT PRODUCT TRUTH — 2026-09-04
 
-## One evolving application
-
-**V8 → V9 → V10 is one Live Shift Command application.**
-
-V10 evolves the existing product in place. It is not a parallel beta product, clean-slate rewrite, replacement state system, replacement archive, or replacement AI stack.
+**V8 → V9 → V10 is one evolving application.** No parallel beta product, no clean-slate rewrite, no replacement state/archive/AI stack.
 
 Repo: `Franksharpe008/ai-opportunity-beta`
-Working branch: `live-shift-command-v10-recovery`
+Branch: `live-shift-command-v10-recovery`
 Draft PR: `#1`
 
-Never deploy stale `main` over the working production applications.
+## Only production surfaces
+Manager:
+- `https://live-shift-command-v74.vercel.app`
+- project ID `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
+- production before hourly-performance promotion: `dpl_HZiAhAaH1uSG8b5f7nCMu2ZCJ54g`
+- pre-V10 rollback: `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX`
 
-## Only production surfaces that matter
+Mobile:
+- `https://live-shift-command-v741-mobile.vercel.app`
+- project ID `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
+- production before hourly-performance promotion: `dpl_moo8RzN8KEZoNK82CnwXEbMgpJ7D`
+- pre-V10 rollback: `dpl_GsxQqw4seGRvtXqE1uupksyUKba9`
 
-### Manager — existing project
-- URL: `https://live-shift-command-v74.vercel.app`
-- project: `live-shift-command-v74`
-- project ID: `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
-- current production deployment before the next hourly-performance promotion: `dpl_HZiAhAaH1uSG8b5f7nCMu2ZCJ54g`
-- preserved pre-V10 rollback: `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX`
+Deprecated side projects are smoke-test scaffolding only.
 
-### Mobile — existing project
-- URL: `https://live-shift-command-v741-mobile.vercel.app`
-- project: `live-shift-command-v741-mobile`
-- project ID: `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
-- current production deployment before the next hourly-performance promotion: `dpl_moo8RzN8KEZoNK82CnwXEbMgpJ7D`
-- preserved pre-V10 rollback: `dpl_GsxQqw4seGRvtXqE1uupksyUKba9`
+## Last verified production health
+- manager/mobile `/api/state` 200 and same ledger, last verified revision 98
+- manager/mobile `/api/archive` 200
+- original `/api/intelligence` preserved; GET health probe returns expected 405 because production uses POST
+- no state reset/data wipe
+- manager no runtime failures in final recovery pass
+- mobile no 401/403/5xx after archive repair
 
-`live-shift-command-v10-mobile-beta` and `live-shift-command-v10-manager-beta` are deprecated smoke-test scaffolding, not the product. Do not extend architecture around them.
+# ARCHITECTURE TO PRESERVE
+Preserve V8/V9 shared state, Plant Memory/archive, original intelligence, voice/photo/type capture, classify/enrich/vision/quality/copilot/transcribe, usage accounting, downtime codes/lifecycle, responders/timing, quality workflow, containment/action/result/verification, Shift Recall, Live Now, Calendar Memory, schedules, Third Shift cross-midnight attribution, detached process runs, End Shift archive, manager intelligence, and current visual language.
 
----
+Shared brain:
+`Manager Web + Mobile Floor → same state/archive/intelligence → V10 adds process/hour truth and context.`
 
-# CURRENT PRODUCTION HEALTH
+Manager rules flow down; floor evidence flows up.
 
-Last verified after V10 recovery:
+# COMPANY GOAL AUTHORITY
+Manager config is the only Company Goal authority. Last verified `state.config.shiftGoal=400`. A legacy active shift still has `current.shiftGoal=265`; do not rewrite raw history for display.
 
-- manager `/api/state` → `200`
-- mobile `/api/state` → `200`
-- same shared ledger; last verified revision `98`
-- manager `/api/archive` → `200`
-- mobile `/api/archive` → `200`
-- original `/api/intelligence` implementation preserved on both surfaces
-- `GET /api/intelligence` health probes correctly return `405 method_not_allowed`; production intelligence uses `POST`
-- manager had no application runtime failures in final health pass
-- mobile had no 401/403/5xx application failures after repair
-- possible Node `DEP0169 url.parse()` warning on `/api/base` is non-fatal; do not destabilize working architecture just to silence it
+The 265↔400 bounce is caused by V9 mobile render painting the legacy shift value before V10 repaints config. `lsc-v10-hourly-performance.js` now wraps render and adds a DOM guard so the visible mobile goal remains manager config only. Mobile goal edit remains removed/read-only.
 
-No data reset occurred during recovery.
-
----
-
-# ARCHITECTURE THAT MUST BE PRESERVED
-
-The accumulated V8/V9 system is infrastructure, not disposable legacy code.
-
-Preserve:
-- shared manager/mobile `/api/state`
-- permanent `/api/archive` Plant Memory
-- original `/api/intelligence`
-- voice/photo/type capture
-- classify/enrich/vision/quality/copilot/transcribe intelligence tasks
-- AI usage accounting
-- all downtime codes
-- downtime lifecycle + actual-vs-recorded time
-- evidence, responders, response ownership and timing
-- Scrap/Rework quality workflow
-- containment / action / result / verification history
-- Shift Recall
-- Live Now / hot memory
-- Calendar Memory
-- effective-dated schedules
-- Third Shift cross-midnight attribution
-- detached process-run identity
-- End Shift archive
-- manager intelligence
-- current visual language and simple mobile cockpit
-
-Shared-brain rule:
-
-`Manager Web + Mobile Floor → same state / archive / intelligence architecture → V10 adds process/hour truth and better context without replacing the foundation.`
-
-Manager rules/configuration flow down. Floor evidence flows up.
-
----
-
-# MANAGER COMPANY GOAL AUTHORITY
-
-Manager configuration is the only authority for Company Goal.
-
-Last verified config:
-- `state.config.shiftGoal = 400`
-
-A legacy active shift can still contain `current.shiftGoal = 265`. That raw historical/current record must not be silently rewritten just for display.
-
-Mobile must always **display manager config** and cannot edit Company Goal. The visible 265 ↔ 400 bounce is a UI-source conflict: old V9 render paints the legacy shift value, then V10 repaints manager config. The new hourly-performance module fixes this synchronously after render and with a DOM guard so the phone should never visibly settle on 265.
-
----
-
-# MOBILE UX RULE
-
-**Keep the shine. Keep it simple. Intelligence grows underneath the cockpit.**
-
-Existing hero, KPIs, Current Hour, active downtime, Shift Copilot, quality actions, Shift Detail and bottom navigation stay.
-
-V10 compact controls remain:
-- LINE selector
-- RUNNING / DOWN / DETACHED context
-- `VERIFY LAST HOUR`
-- `MORE`
-- Process Actual / line downtime / bounded AI command behind secondary tools
-
-## New branch implementation — Actual / Good hourly performance
+# ACTUAL / GOOD HOURLY PERFORMANCE
+Implemented in commit `7d844deb648f488146ab1fe859d978edf897ff40`.
 
 Files:
 - `continuation-v10/lsc-v10-hourly-performance.js`
 - `continuation-v10/lsc-v10-hourly-performance.css`
 
 Behavior:
-- the existing **Actual / Good** KPI becomes tappable
-- opens a slick Hourly Performance sheet rather than adding another dashboard to the main screen
-- shows Company Goal, Actual / Good, accrued hourly target, progress, gap, Scrap, Rework
-- all configured shift hours appear with goal / actual / percentage
-- status is deterministic green / amber / red, with missing and future states
-- current hour uses time-adjusted expectation; completed hours use full hourly target
-- tap an available hour to enter/correct Good Actual, Scrap total, Rework total, and optional note
-- future hours are not editable
-- missing Actual stays missing; never auto-zero
-- hourly Scrap/Rework in this panel are **totals**, not new defect events
-- structured Scrap/Rework workflow remains the place for root cause, containment, evidence and verification
-- corrections and shift-level change attribution are preserved in audit history
-- the main Actual / Good KPI immediately reflects the same existing `current.production[]` ledger the cockpit already uses
+- existing Actual / Good KPI becomes tappable
+- slick Hourly Performance sheet
+- Company Goal, Actual, accrued target, progress/gap, Scrap/Rework
+- eight hourly rows with goal/actual/%
+- deterministic green >=100%, amber >=90%, red <90%; missing/future distinct
+- current hour compares to time-adjusted expectation
+- enter/correct Good Actual + Scrap total + Rework total + note per available hour
+- writes existing `current.production[]`; no second backend/table
+- future hours disabled; missing never becomes fake zero
+- hourly Scrap/Rework are totals, not duplicate defect events
+- structured quality workflow remains authoritative for root cause/evidence/verification
+- corrections + hidden shift actor audit preserved
 
-This implementation is on the recovery branch and must pass CI before promotion to the existing mobile project.
+# AI WORLD / COST POLICY
+Implemented in `continuation-v10/lsc-v10-ai-world.js` in commit `7d844deb648f488146ab1fe859d978edf897ff40`.
 
----
+**Zero autonomous/background model calls. No hourly polling.**
 
-# AI COST + WORLD CONTEXT RULE
+Routine performance bands, gaps, recovery math, downtime overlap and status are deterministic/free. AI spends only when somebody deliberately uses existing Copilot/AI functionality.
 
-Frank explicitly does **not** want hourly/background model calls burning Cloudflare/GLM neurons.
+When a deliberate Copilot request occurs, AI World attaches the current architecture snapshot: manager goal, current shift, hourly Actual/Good/Scrap/Rework, targets/status, deterministic recovery math, selected process/run, V10 process-run/hour evidence, active downtime, previous shift, handoff overlap codes; existing V8 Plant Memory/recurrence context remains intact.
 
-New shared module:
-- `continuation-v10/lsc-v10-ai-world.js`
+This supports broad questions such as “How does the shift look?”, “Can we recover?”, “What is hurting us?”, and “Are yesterday’s handoff issues repeating?” without background neuron burn.
 
-Policy:
-- **zero autonomous/background model calls**
-- no hourly AI polling
-- no model call just because the performance panel opens or data changes
-- deterministic code handles goals, performance bands, gaps, recovery math, downtime overlap, status and normal UI guidance
-- existing Copilot/AI is called only when a person intentionally asks or requests an AI action already supported by the product
+# CI STATUS
+For commit `7d844deb648f488146ab1fe859d978edf897ff40`:
+- Live Shift V10 Acceptance push run `33846668681` → PASS
+- Live Shift Handoff Guard push run `33846668715` → PASS
+- stale PR promotion run `33846670941` failed safely at missing Vercel credential before any deployment step; production was untouched
 
-When an intentional Copilot request occurs, AI World attaches the live architecture snapshot at that moment, including:
-- authoritative manager Company Goal
-- current shift and production totals
-- all hourly Actual / Good / Scrap / Rework values
-- hourly targets and time-adjusted status
-- deterministic recovery math: gap, time remaining, required hourly rate to Company Goal
-- current selected process/run context
-- V10 process-run/hour evidence
-- active downtime
-- previous shift summary
-- handoff overlap codes
-- existing V8 Plant Memory / recurrence context remains intact
+# DEPLOYMENT SAFETY — CURRENT
+The obsolete `.github/workflows/promote-live-shift-v10.yml` is now intentionally manual-only and refuses deployment. It previously contained the protected-origin rewrite pattern that caused the archive problem and must never be used again.
 
-This is designed so questions such as these can be answered from real evidence without adding a new provider or background spending:
-- “How does the shift look overall?”
-- “Do you think we can recover?”
-- “What is hurting us right now?”
-- “Are we seeing yesterday’s handoff problems again?”
-- other out-of-box Copilot questions about the live plant state
+Safe path:
+- `.github/workflows/live-shift-v10-production.yml`
+- `continuation-v10/tools/prepare-inplace-production.mjs`
 
-The AI should see the world **when asked**, not continuously spend tokens watching it.
+Safe topology generated for deployment:
+- current public V9/V10 shell is recovered, old V10 tags removed, current tested V10 assets injected locally
+- protected V9 static assets remain behind `/api/base` with Vercel OIDC
+- manager `/api/state`, `/api/archive`, `/api/intelligence` proxy to preserved original manager V9 backend with production OIDC
+- mobile `/api/state`, `/api/archive`, `/api/intelligence` proxy to the **live manager authority**, not the protected old mobile backend
+- manager deploys first; its state/archive health is checked before mobile deploys
+- `.vercel/project.json` pins exact existing project IDs
+- smoke test requires new AI World + hourly-performance assets, shared revision parity, archive health, and expected intelligence 405 GET behavior
 
----
+# PLANT TRUTH
+Timezone `America/Chicago`; operating day 07:00→06:59:59.
+Shifts: First 07–15, Second 15–23, Third 23–07.
+Detached Opal Assembly: Day 07:00–15:40; Night 19:00–03:40.
 
-# SHARED PLANT TRUTH
-
-Timezone: `America/Chicago`
-Operating day: `07:00 → 06:59:59`
-
-Plant shifts:
-- First Shift `07:00–15:00`
-- Second Shift `15:00–23:00`
-- Third Shift `23:00–07:00`
-
-Detached process schedules:
-- Opal Assembly Day `07:00–15:40`
-- Opal Assembly Night `19:00–03:40`
-
-A detached run can cross plant-shift ownership. Preserve one continuous process run while stamping every event/hour with the plant shift responsible at that moment.
-
-Plant truth:
-
+Truth model:
 `Calendar Day → Plant Shift → Process Run → Hour → Production + Downtime + Quality + Response + Evidence + Verification`
 
----
+# NEXT STEP
+The next tagged deployment commit should run acceptance, build the safe exact-project payload, request Vercel device approval only if no repo token exists, deploy manager first then mobile, and smoke the regular URLs. After it completes, update both handoff files with the new deployment IDs and final verification.
 
-# V10 CORE CAPABILITIES ALREADY IMPLEMENTED
+Then use real plant data only to prove hourly write → shared state → manager reconstruction → End Shift archive → Calendar Memory. Do not create fake production data.
 
-Modules live under `live-shift-command-beta/continuation-v10/`.
-
-- `current.processProduction[]`
-- process/run/hour identity
-- missing Actual stays missing
-- no redistribution of generic shift Actual into process Actual
-- correction/upsert history
-- Started Now / Started Earlier / Correct Start Time
-- Restored Now / Restored Earlier
-- actual equipment time separate from record-entry time
-- hidden shift actor attribution: First / Second / Third Shift
-- `current.hourVerification[]`
-- bounded AI operational commands with deterministic write ownership
-- manager Calendar Day Reconstruction
-- capacity/rate intelligence: HOLD / INVESTIGATE / TRIAL HIGHER RATE
-- downtime / quality / residual rate-loss decomposition
-- canonical 4M + optional manager 6M refinement
-- Morning Meeting Brief upgraded in place with exact 1–9 section order
-
-AI cannot autonomously change Company Goal, schedule config, authority, archive deletion, or capacity recommendation into configuration.
-
----
-
-# TESTS / QUALITY GATES
-
-Existing workflow:
-- `Live Shift V10 Acceptance`
-
-New modules must be syntax checked and covered by integration/release-builder contracts.
-
-Last known green before this new hourly-performance change:
-- acceptance run `#85`
-- commit `2c2fe26eb821066c40b64548a2e060b7070b342b`
-
-Continuity workflow:
-- `Live Shift Handoff Guard`
-- `.github/workflows/live-shift-handoff-guard.yml`
-
----
-
-# EXACT NEXT STEPS
-
-1. Commit hourly-performance + AI World + release/test changes atomically with this handoff.
-2. Wait for `Live Shift V10 Acceptance` to pass.
-3. Promote the new V10 assets to the **same existing manager/mobile Vercel projects only**.
-4. Verify on the regular mobile URL:
-   - Company Goal remains visually 400 with no 265 bounce
-   - goal edit control remains absent/read-only
-   - Actual / Good is tappable
-   - Hourly Performance opens cleanly
-   - current/completed hour can save Good/Scrap/Rework without creating duplicate quality events
-   - green/amber/red status updates from deterministic math
-   - opening panel causes no `/api/intelligence` call
-5. Verify manager/mobile state + archive + intelligence health again after deployment.
-6. Update both handoff files with the new production deployment IDs and verification.
-7. During real production, prove mobile write → shared state → manager reconstruction → End Shift archive → Calendar Memory reconstruction.
-
-Do not create fake plant data for the proof.
-
----
-
-# NON-NEGOTIABLE BUILD RULES
-
-- Same product, same existing projects, same regular URLs.
-- No clean-slate rewrite.
-- No parallel beta as the product.
-- No fake plant data.
-- No silent null → zero.
-- No double-counted quality.
-- No duplicate AI/provider/config/state/archive systems.
-- Manager Company Goal is authoritative and mobile read-only.
-- Mobile simplicity wins over exposing every capability.
-- AI is explicit-use only; no background neuron burn.
-- Preserve all downtime codes and canonical 4M.
-- Shift Roster stays separate and untouched.
-- Preserve rollback deployment IDs before production changes.
-- Verify regular production URLs after every deployment.
-- Update `CONTINUE_HERE.md` + append `BUILD_HANDOFF_LOG.md` after every meaningful modification.
+# NON-NEGOTIABLES
+Same product/projects/URLs. No fake data. No null→zero. No double-count quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollback IDs. Shift Roster untouched. Verify regular URLs after deploy. Update both handoff files after every meaningful change.
