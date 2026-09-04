@@ -8,6 +8,9 @@ Every meaningful modification updates this file **and** appends `live-shift-comm
 ## Live approval workflow — binding
 When Vercel approval is required, generate the device code only while the active job is waiting, send it immediately, then remain in the polling loop until approval clears. Frank should not have to return and tell the assistant approval succeeded; continue automatically when it flips.
 
+## AI-cost / live-test rule — binding
+Do **not** fire real `/api/intelligence` POSTs merely to prove a build. Acceptance/regression tests must be local/mock unless Frank intentionally chooses to test AI in the app. Production smoke may use GET `/api/intelligence` expecting 405 to verify routing, but must not spend Cloudflare/GLM/model neurons. After deployment, Frank performs the real AI Brief/Copilot live test himself.
+
 # CURRENT PRODUCT TRUTH — 2026-09-04
 
 **V8 → V9 → V10 is one evolving Live Shift Command application.** Never create a parallel product, new state service, new archive, or replacement AI stack.
@@ -20,14 +23,14 @@ Draft PR: `#1`
 Manager:
 - `https://live-shift-command-v74.vercel.app`
 - project `prj_ETPejWyItkL7iE586cO4CbGlZWk6`
-- current production `dpl_GjQVF6dPZCAksy4gBED5tAej3uxd`
+- current verified production `dpl_GjQVF6dPZCAksy4gBED5tAej3uxd`
 - previous rollback `dpl_ALaP1FtaCyBjxPRTf8e8HNg3K94y`
 - pre-V10 rollback `dpl_9htmWxc6jLdCW5SUpnLKp7zj2sfX`
 
 Mobile:
 - `https://live-shift-command-v741-mobile.vercel.app`
 - project `prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON`
-- current production `dpl_AVy8Pt7UVk1oeUM5NAXq8DBEsjem`
+- current verified production `dpl_AVy8Pt7UVk1oeUM5NAXq8DBEsjem`
 - previous rollback `dpl_4pg2tkmUSiEC9qWFKqwgdDn6yyHa`
 - pre-V10 rollback `dpl_GsxQqw4seGRvtXqE1uupksyUKba9`
 
@@ -92,44 +95,72 @@ Safe interpretation:
 - root cause: not established;
 - do not claim permanent fix without evidence.
 
+Live revision `110` proves RB10 closeout was ultimately saved with human confirmation, reset action, four-part rerun result and `recovered_not_verified_permanent` status.
+
 # AI WORLD / COST POLICY
-AI is available across the architecture but sleeps until a person intentionally asks. `lsc-v10-ai-world.js` attaches live architecture context only on deliberate Copilot/AI requests. No hourly polling, no background GLM/Cloudflare neuron burn, no second provider/router.
+AI is available across the architecture but sleeps until a person intentionally asks. No hourly polling, no background GLM/Cloudflare neuron burn, no second provider/router.
+
+`lsc-v10-ai-world.js` version `1.2.0` now attaches the existing live world to deliberate **Copilot and AI Brief (`summary`)** requests, including:
+- authoritative manager goal;
+- hourly performance + verification trust;
+- process-run hourly context;
+- previous shift + handoff overlap codes;
+- recovery math;
+- recent resolution memory/action/result/verification.
+
+# AI BRIEF / COPILOT RELIABILITY — STAGED, REAL AI STILL PRIMARY
+Frank's live test exposed three manager `summary` POST failures at 09:34:05, 09:34:42 and 09:35:17 UTC. The preserved V9 backend logged HTTP 502 with:
+`cloudflare_gateway_output_missing`.
+Earlier intelligence calls were 200, shared state remained revision `110`, and RB10 evidence remained intact. Therefore the failure is provider/gateway output reliability, not missing plant data or a broken shared brain.
+
+New additive file: `lsc-v10-ai-reliability.js` version `1.0.1`.
+Contract:
+- real existing `/api/intelligence` request always gets first chance;
+- only `summary` and `copilot` receive this reliability treatment;
+- on non-2xx / gateway-empty / timeout / network failure, **no second model call** is made;
+- instead it returns a normal source-grounded response from live shared state + V10 AI World;
+- fallback audit uses `usageUnits: 0` and `gatewayFallback: true`;
+- recovery answers refuse to pretend when Good Actual is missing;
+- the fallback surfaces goal, Actual/missing truth, downtime, Scrap/Rework, verification backlog, latest confirmed resolution, prior-shift overlap and management attention;
+- a UI watchdog on `#v8Ask` also supplies live evidence if the legacy Copilot click path fails before sending a request;
+- no new AI provider, router, database or autonomous call.
+
+Minimal mocked/local acceptance only:
+- V10 Acceptance run `33860204477`: **SUCCESS**.
+- No real AI POST was fired by assistant to validate the reliability layer. Frank will test AI Brief/Copilot live after deployment.
+
+# PREMIUM VERIFICATION CTA — STAGED WITH SAME NEXT RELEASE
+Frank observed mobile flashing every few seconds between legacy `VERIFY LAST HOUR` and correct backlog count.
+
+Root cause: `lsc-v10-mobile.js` rebuilt the button every 4 seconds with legacy text and `lsc-v10-verification-ui.js` corrected it after paint.
+
+Repair:
+- `lsc-v10-mobile.js` `1.3.1` creates the verification slot hidden + empty before paint;
+- mobile contains no `VERIFY LAST HOUR` or `LAST HOUR VERIFIED` text;
+- V10 verification UI is sole owner of label/visibility/click;
+- only actionable states appear: `1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, pending sync, or nothing when clear.
+
+Earlier premium-only production marker `63fdf0e7ec30313ab82ef284fb71c5e76b6cd6fc` created run `33859375212`, but it was **cancelled at Vercel Authenticate** by later work. Manager/mobile deploy steps were skipped, so it did not partially change production.
+
+The next production release must ship the premium CTA fix and AI reliability together exactly once.
 
 # SAFARI / STATIC ASSET RULE
 Exact V9 CSS/JS are static files in the same production deployment. Browser-facing HTML must not depend on `/api/base`. Backend state/archive/intelligence topology stays preserved.
 
-# CURRENT WORK IN PROGRESS — PREMIUM VERIFICATION CTA, NO FLICKER
-Frank observed the mobile CTA still flashing every few seconds between legacy `VERIFY LAST HOUR` and the correct backlog count such as `5 HOURS NEED VERIFICATION`.
-
-Root cause: `lsc-v10-mobile.js` rebuilt `#v10mVerifyHour` every 4 seconds with legacy last-hour text, then `lsc-v10-verification-ui.js` corrected it after paint.
-
-Staged repair:
-- `lsc-v10-mobile.js` version `1.3.1` renders the verification slot hidden + empty before paint;
-- mobile renderer contains no `VERIFY LAST HOUR` and no `LAST HOUR VERIFIED` strings;
-- V10 verification UI is the sole owner of visibility/text/click behavior;
-- `renderInline()` calls `LSC_V10_VERIFICATION_UI.sync()` synchronously after rebuilding the inline area;
-- visible states are only actionable truth: `1 HOUR NEEDS VERIFICATION`, `N HOURS NEED VERIFICATION`, `N HOURS PENDING SYNC`, or no CTA when clear;
-- regression tests fail if legacy wording returns or hidden-before-paint ownership is removed.
-
-Implementation:
-- source fix `9d45dc82fb2299291c706f02e41a18c08805e27d`
-- verification UI regression test `a5f05bad9173d9a474a65a2ede28ac1dd465688c`
-- canonical handoff `5421db5e2f4bf690183302157a6eb651249f20e2`
-- build log `8707c9e23565e27d51329037452367f30eeb25e6`
-
-Gate history:
-- Handoff Guard on `8707c9e...`: SUCCESS.
-- V10 Acceptance initially failed only because `tests/v10-integration-contract.js` still asserted that mobile **must contain** `VERIFY LAST HOUR`.
-- This was an outdated test contract, not a runtime code failure.
-- Integration contract corrected in `44675694b433f3c8957a24e4fc37fc6c07f07460` to require the premium behavior: no legacy last-hour wording, hidden-before-paint queue slot, synchronous V10 verification sync.
-
-**Not production yet.** Next step: update both handoffs for the contract correction, rerun full V10 Acceptance + Handoff Guard, then promote only through `.github/workflows/live-shift-v10-production.yml` with live approval and final regular-URL smoke. Do not call the flicker fixed in production until that passes.
-
 # SAFE DEPLOYMENT PATH
 Use only `.github/workflows/live-shift-v10-production.yml` with `continuation-v10/tools/prepare-inplace-production.mjs`.
 
+Current smoke contract explicitly does **not** POST AI. It checks:
+- manager/mobile roots and static assets;
+- AI World + AI Reliability + resolution guard loaded;
+- mobile `1.3.1` and no legacy last-hour strings;
+- shared state revisions match;
+- archive healthy;
+- GET `/api/intelligence` remains expected 405;
+- no `/api/base` browser dependencies.
+
 Sequence:
-acceptance → current static-shell build → live Vercel approval → existing manager project → manager authority check → existing mobile project → smoke regular URLs/shared revision/archive/intelligence/static assets/new modules → update both handoffs.
+mock/local acceptance → current static-shell build → live Vercel approval → existing manager project → manager authority check → existing mobile project → non-paid smoke → Frank performs live AI Brief/Copilot test → update both handoffs with exact deployment IDs/results.
 
 # PLANT TRUTH
 Timezone `America/Chicago`; operating day `07:00 → 06:59:59`.
@@ -138,4 +169,4 @@ Opal Assembly detached Day 07:00–15:40; Night 19:00–03:40.
 Truth model: `Calendar Day → Plant Shift → Process Run → Hour → Production + Downtime + Quality + Response + Evidence + Verification`.
 
 # NON-NEGOTIABLES
-Same projects/URLs. No fake data. No null→zero. No double-counted quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollback candidates. Shift Roster untouched. Verify regular URLs after every deployment. Update both handoff files after every meaningful modification. Handle approvals live and keep polling until they clear. Premium UI means one visual owner per control—never observer-based visible label fighting.
+Same projects/URLs. No fake data. No null→zero. No double-counted quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollback candidates. Shift Roster untouched. Verify regular URLs after every deployment. Update both handoff files after every meaningful modification. Handle approvals live and keep polling until they clear. Premium UI means one visual owner per control. Do not burn real model usage for deployment verification; Frank tests intentional AI live.
