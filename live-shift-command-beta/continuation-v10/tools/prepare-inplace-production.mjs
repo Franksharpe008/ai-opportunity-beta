@@ -14,9 +14,9 @@ const MOBILE_PROJECT='prj_Rq7aASOrQ6zFXzoBsqtJPHCt72ON';
 const MANAGER_PROJECT='prj_ETPejWyItkL7iE586cO4CbGlZWk6';
 
 const MOBILE_V10_CSS=['lsc-v10-mobile.css','lsc-v10-hourly-performance.css'];
-const MOBILE_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-resolution-guard.js','lsc-v10-mobile.js','lsc-v10-floor-ops.js','lsc-v10-hourly-performance.js','lsc-v10-verification-queue.js','lsc-v10-verification-ui.js'];
+const MOBILE_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-ai-reliability.js','lsc-v10-resolution-guard.js','lsc-v10-mobile.js','lsc-v10-floor-ops.js','lsc-v10-hourly-performance.js','lsc-v10-verification-queue.js','lsc-v10-verification-ui.js'];
 const MANAGER_V10_CSS=['lsc-command-v10.css','lsc-v10-capacity.css','lsc-v10-brief.css'];
-const MANAGER_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-resolution-guard.js','lsc-v10-floor-ops.js','lsc-v10-ui.js','lsc-v10-verification-queue.js','lsc-v10-cause-extension.js','lsc-v10-capacity.js','lsc-v10-capacity-ui.js','lsc-v10-brief.js'];
+const MANAGER_V10_JS=['lsc-v10-core.js','lsc-v10-ai-world.js','lsc-v10-ai-reliability.js','lsc-v10-resolution-guard.js','lsc-v10-floor-ops.js','lsc-v10-ui.js','lsc-v10-verification-queue.js','lsc-v10-cause-extension.js','lsc-v10-capacity.js','lsc-v10-capacity-ui.js','lsc-v10-brief.js'];
 const BASE_MOBILE=['app1.js','app2.js','app3.js','lsc-intelligence.js','lsc-v8.js','lsc-command-v9.js','style.css','lsc-v8.css','lsc-command-v9.css'];
 const BASE_MANAGER=[...BASE_MOBILE,'manager-intelligence.js','manager-intelligence.css'];
 
