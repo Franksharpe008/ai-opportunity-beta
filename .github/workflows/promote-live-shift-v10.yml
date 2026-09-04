@@ -6,6 +6,11 @@ on:
       - live-shift-command-v10-recovery
     paths:
       - '.github/v10-promote-now'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/v10-promote-now'
   workflow_dispatch:
 
 concurrency:
