@@ -1,6 +1,6 @@
 const {spawnSync}=require('child_process');
 const path=require('path');
-const tests=['v10-core-acceptance.js','v10-capacity-acceptance.js','v10-brief-acceptance.js','v10-integration-contract.js','v10-floor-ops-acceptance.js','v10-release-builder-acceptance.js','v10-deployment-contract.js','v10-verification-queue-contract.js','v10-verification-ui-contract.js','v10-resolution-guard-contract.js'];
+const tests=['v10-core-acceptance.js','v10-capacity-acceptance.js','v10-brief-acceptance.js','v10-integration-contract.js','v10-floor-ops-acceptance.js','v10-release-builder-acceptance.js','v10-deployment-contract.js','v10-verification-queue-contract.js','v10-verification-ui-contract.js','v10-resolution-guard-contract.js','v10-ai-reliability-contract.js'];
 let failed=0;
 for(const test of tests){const p=spawnSync(process.execPath,[path.join(__dirname,test)],{stdio:'inherit'});if(p.status!==0){failed++;console.error(`FAIL: ${test}`)}else console.log(`OK: ${test}`)}
 if(failed){console.error(`V10 ACCEPTANCE: ${failed} TEST(S) FAILED`);process.exit(1)}
