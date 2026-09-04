@@ -98,13 +98,15 @@ jobs:
         run: |
           cd dist-inplace/mobile
           vercel deploy --prod --yes --token "$DEPLOY_TOKEN"
-      - name: Smoke same production URLs and shared brain
+      - name: Smoke same production URLs and shared brain — no paid AI POST
         run: |
           set -euo pipefail
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/ >/tmp/manager.html
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/ >/tmp/mobile.html
           grep -q 'lsc-v10-ai-world.js' /tmp/manager.html
           grep -q 'lsc-v10-ai-world.js' /tmp/mobile.html
+          grep -q 'lsc-v10-ai-reliability.js' /tmp/manager.html
+          grep -q 'lsc-v10-ai-reliability.js' /tmp/mobile.html
           grep -q 'lsc-v10-resolution-guard.js' /tmp/manager.html
           grep -q 'lsc-v10-resolution-guard.js' /tmp/mobile.html
           grep -q 'lsc-v10-hourly-performance.js' /tmp/mobile.html
@@ -118,19 +120,29 @@ jobs:
           if grep -q '/api/base?file=' /tmp/manager.html || grep -q '/api/base?file=' /tmp/mobile.html; then echo 'browser asset bridge still present'; exit 1; fi
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/style.css >/tmp/mobile-style.css
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-command-v9.js >/tmp/mobile-v9.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-mobile.js >/tmp/mobile-v10.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-hourly-performance.js >/tmp/mobile-hourly.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-verification-queue.js >/tmp/mobile-verify.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-verification-ui.js >/tmp/mobile-verify-ui.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-resolution-guard.js >/tmp/mobile-resolution-guard.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/lsc-v10-ai-reliability.js >/tmp/mobile-ai-reliability.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-ai-world.js >/tmp/manager-ai-world.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-ai-reliability.js >/tmp/manager-ai-reliability.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-resolution-guard.js >/tmp/manager-resolution-guard.js
           grep -q ':root' /tmp/mobile-style.css
           grep -q 'Live Shift Command V9' /tmp/mobile-v9.js
+          grep -q 'lsc-v10-mobile-1.3.1' /tmp/mobile-v10.js
+          ! grep -q 'VERIFY LAST HOUR' /tmp/mobile-v10.js
+          ! grep -q 'LAST HOUR VERIFIED' /tmp/mobile-v10.js
           grep -q 'zero background AI' /tmp/mobile-hourly.js
           grep -q 'offline outbox' /tmp/mobile-verify.js
           grep -q 'backlog indicator only when action is required' /tmp/mobile-verify-ui.js
           grep -q '422/network-safe source-grounded closeout' /tmp/mobile-resolution-guard.js
           grep -q '422/network-safe source-grounded closeout' /tmp/manager-resolution-guard.js
+          grep -q 'real AI primary' /tmp/mobile-ai-reliability.js
+          grep -q 'zero second model call' /tmp/mobile-ai-reliability.js
+          grep -q 'real AI primary' /tmp/manager-ai-reliability.js
+          grep -q 'zero second model call' /tmp/manager-ai-reliability.js
           grep -q 'zero autonomous model calls' /tmp/manager-ai-world.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/api/state >/tmp/manager-state.json
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v741-mobile.vercel.app/api/state >/tmp/mobile-state.json
@@ -140,5 +152,5 @@ jobs:
           test "$(curl -s -o /tmp/mo.json -w '%{http_code}' https://live-shift-command-v741-mobile.vercel.app/api/intelligence)" = '405'
           node - <<'NODE'
           const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/manager-state.json','utf8')),b=JSON.parse(fs.readFileSync('/tmp/mobile-state.json','utf8')),ma=JSON.parse(fs.readFileSync('/tmp/manager-archive.json','utf8')),mb=JSON.parse(fs.readFileSync('/tmp/mobile-archive.json','utf8'));
-          if(!a.state||!b.state)throw Error('shared state missing');if(a.revision!==b.revision)throw Error(`revision mismatch ${a.revision} vs ${b.revision}`);if(!ma.ok||!mb.ok)throw Error('archive unhealthy');console.log(`SAFE V10 PROMOTION VERIFIED · shared revision ${a.revision} · browser assets static · verification queue + resolution guard loaded`);
+          if(!a.state||!b.state)throw Error('shared state missing');if(a.revision!==b.revision)throw Error(`revision mismatch ${a.revision} vs ${b.revision}`);if(!ma.ok||!mb.ok)throw Error('archive unhealthy');console.log(`SAFE V10 PROMOTION VERIFIED · shared revision ${a.revision} · static assets · premium verification CTA + resolution guard + AI reliability loaded · no paid AI inference used by smoke`);
           NODE
