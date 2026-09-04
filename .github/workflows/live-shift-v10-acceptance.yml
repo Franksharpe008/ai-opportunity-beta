@@ -35,6 +35,7 @@ jobs:
           node --check lsc-v10-core.js
           node --check lsc-v10-mobile.js
           node --check lsc-v10-ui.js
+          node --check lsc-v10-cause-extension.js
           node --check lsc-v10-capacity.js
           node --check lsc-v10-capacity-ui.js
           node --check lsc-v10-brief.js
