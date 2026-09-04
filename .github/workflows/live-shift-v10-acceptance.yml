@@ -39,6 +39,7 @@ jobs:
           node --check lsc-v10-capacity.js
           node --check lsc-v10-capacity-ui.js
           node --check lsc-v10-brief.js
+          node --check tools/build-v10-release.mjs
 
       - name: Run V10 acceptance suite
         run: node tests/run-v10-acceptance.js
