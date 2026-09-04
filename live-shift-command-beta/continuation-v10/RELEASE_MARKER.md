@@ -1,21 +1,24 @@
 # V10 Production Release Marker
 
-Feature commit: `265f15bf1525d872fb37216ad9f2814103a68500`
-Builder correction commit: `d593302429f5abd6952d258cf0e4ac9aae65b6d5`
+Repair feature commit: `71ff4f2cb049c8eb8aad3a52c19e127f85e09bac`
+Production smoke-hardening commit: `5cc4d68db6add03c247302b6bf0faf471197b8f0`
 
-Validated before this promotion:
-- Live Shift V10 Acceptance run `33852771609`: SUCCESS
-- Live Shift Handoff Guard run `33852771439`: SUCCESS
-- Previous promotion run `33852395169` stopped safely before Vercel because the old builder requested retired `/api/base` assets; production was untouched.
-- Corrected builder harvests exact V9 shell assets from current normal static production paths.
+Validated before promotion:
+- Live Shift V10 Acceptance push run `33855407932`: SUCCESS
+- Live Shift V10 Acceptance PR run `33855412983`: SUCCESS
+- Live Shift Handoff Guard push run `33855407861`: SUCCESS
+- Live Shift Handoff Guard PR run `33855412962`: SUCCESS
+- Current-head smoke-hardening Acceptance PR run `33855797385`: SUCCESS
+- Current-head Handoff Guard PR run `33855797425`: SUCCESS
 
 Release scope:
-- shift-wide completed-hour verification backlog across all shifts/days
-- rapid oldest-first Good / Scrap / Rework catch-up
-- offline verification outbox with pending-sync truth
-- manager verification completeness indicator
-- AI World verification trust on intentional AI calls only
-- corrected production smoke test with no `curl | grep -q` false failure
+- eliminate visible legacy `VERIFY LAST HOUR` / V10 backlog-label bounce;
+- show verification CTA only when completed hours actually require verification or pending sync;
+- preserve existing intentional `/api/intelligence` resolution enrich call as primary;
+- on resolution 422/network/invalid structured response, use a zero-model-call source-grounded fallback that feeds the existing V8 Confirm Resolution + save/Plant Memory workflow;
+- no second AI provider, no second model call, no new state/archive/database;
+- exact RB10 Vision Test regression sentence is covered by acceptance tests;
+- production smoke must prove both regular surfaces load `lsc-v10-resolution-guard.js` and mobile loads `lsc-v10-verification-ui.js`.
 
 Deployment target remains ONLY the existing projects and regular URLs:
 - Manager `prj_ETPejWyItkL7iE586cO4CbGlZWk6` → `https://live-shift-command-v74.vercel.app`
