@@ -24,70 +24,72 @@ jobs:
         run: |
           node <<'NODE'
           const vm = require('vm');
-          const base = process.env.LSC_URL;
-          const stateRes = await fetch(`${base}/api/state`, {cache:'no-store'});
-          if (!stateRes.ok) throw new Error(`state_http_${stateRes.status}`);
-          const envelope = await stateRes.json();
-          const state = envelope.state || {};
-          if (!state.current) throw new Error('no_current_shift');
+          (async()=>{
+            const base = process.env.LSC_URL;
+            const stateRes = await fetch(`${base}/api/state`, {cache:'no-store'});
+            if (!stateRes.ok) throw new Error(`state_http_${stateRes.status}`);
+            const envelope = await stateRes.json();
+            const state = envelope.state || {};
+            if (!state.current) throw new Error('no_current_shift');
 
-          const eccRes = await fetch(`${base}/lsc-v10-ai-reliability.js`, {cache:'no-store'});
-          if (!eccRes.ok) throw new Error(`ecc_js_http_${eccRes.status}`);
-          const eccSource = await eccRes.text();
-          if (!eccSource.includes('lsc-v10-ai-reliability-1.1.0')) throw new Error('ecc_version_missing');
+            const eccRes = await fetch(`${base}/lsc-v10-ai-reliability.js`, {cache:'no-store'});
+            if (!eccRes.ok) throw new Error(`ecc_js_http_${eccRes.status}`);
+            const eccSource = await eccRes.text();
+            if (!eccSource.includes('lsc-v10-ai-reliability-1.1.0')) throw new Error('ecc_version_missing');
 
-          let realAiCalls = 0;
-          const upstreamFetch = async (input, init={}) => {
-            const url = typeof input === 'string' ? input : input?.url || '';
-            if (url.includes('/api/intelligence') && String(init?.method || 'GET').toUpperCase() === 'POST') realAiCalls++;
-            return fetch(input, init);
-          };
-          const document = { addEventListener(){}, getElementById(){ return null; } };
-          const world = {
-            snapshot: () => ({
-              hourly_verification:{to_verify:0,pending_sync:0},
-              recovery_math:{company_goal:Number(state.config?.shiftGoal ?? 400),actual_known:false,actual_good:null,gap_to_company_goal:null,minutes_remaining:0,required_good_per_hour_to_company_goal:null,configured_mes_rate:Number(state.config?.mesRate ?? 40.5)},
-              handoff_overlap_codes:[],
-              current_shift:{top_downtime_codes:[]},
-              previous_shift:null
-            })
-          };
-          const context = {
-            console, Response, Date, Math, setTimeout, clearTimeout,
-            state, document,
-            window:{fetch:upstreamFetch, LSC_V10_AI_WORLD:world}
-          };
-          context.globalThis = context;
-          vm.createContext(context);
-          vm.runInContext(eccSource, context);
+            let realAiCalls = 0;
+            const upstreamFetch = async (input, init={}) => {
+              const url = typeof input === 'string' ? input : input?.url || '';
+              if (url.includes('/api/intelligence') && String(init?.method || 'GET').toUpperCase() === 'POST') realAiCalls++;
+              return fetch(input, init);
+            };
+            const document = { addEventListener(){}, getElementById(){ return null; } };
+            const world = {
+              snapshot: () => ({
+                hourly_verification:{to_verify:0,pending_sync:0},
+                recovery_math:{company_goal:Number(state.config?.shiftGoal ?? 400),actual_known:false,actual_good:null,gap_to_company_goal:null,minutes_remaining:0,required_good_per_hour_to_company_goal:null,configured_mes_rate:Number(state.config?.mesRate ?? 40.5)},
+                handoff_overlap_codes:[],
+                current_shift:{top_downtime_codes:[]},
+                previous_shift:null
+              })
+            };
+            const context = {
+              console, Response, Date, Math, setTimeout, clearTimeout,
+              state, document,
+              window:{fetch:upstreamFetch, LSC_V10_AI_WORLD:world}
+            };
+            context.globalThis = context;
+            vm.createContext(context);
+            vm.runInContext(eccSource, context);
 
-          const s = state.current;
-          const prod = (s.production || []).reduce((a,p)=>{
-            if (p?.good != null && p.good !== '' && Number.isFinite(+p.good)) { a.actual += +p.good; a.known++; }
-            a.scrap += +p?.scrap || 0; a.rework += +p?.rework || 0; return a;
-          }, {actual:0,known:0,scrap:0,rework:0});
-          const payload = {
-            task:'summary',
-            shift:{
-              label:s.label||'', workDate:s.workDate||'',
-              production:{goal:Number(state.config?.shiftGoal ?? 400),actual:prod.known?prod.actual:null,scrap:prod.scrap,rework:prod.rework},
-              events:(s.events||[]).map(e=>({id:e.id||null,area:e.area||null,code:e.issueCode||null,name:e.reason||null,status:e.status||null,action_taken:e.actionTaken||[],result:e.result||null,verification:e.verification||null,notes:e.notes||null}))
-            }
-          };
+            const s = state.current;
+            const prod = (s.production || []).reduce((a,p)=>{
+              if (p?.good != null && p.good !== '' && Number.isFinite(+p.good)) { a.actual += +p.good; a.known++; }
+              a.scrap += +p?.scrap || 0; a.rework += +p?.rework || 0; return a;
+            }, {actual:0,known:0,scrap:0,rework:0});
+            const payload = {
+              task:'summary',
+              shift:{
+                label:s.label||'', workDate:s.workDate||'',
+                production:{goal:Number(state.config?.shiftGoal ?? 400),actual:prod.known?prod.actual:null,scrap:prod.scrap,rework:prod.rework},
+                events:(s.events||[]).map(e=>({id:e.id||null,area:e.area||null,code:e.issueCode||null,name:e.reason||null,status:e.status||null,action_taken:e.actionTaken||[],result:e.result||null,verification:e.verification||null,notes:e.notes||null}))
+              }
+            };
 
-          const r = await context.window.fetch(`${base}/api/intelligence`, {
-            method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload), cache:'no-store'
-          });
-          const d = await r.json();
-          console.log(`REAL_AI_CALLS=${realAiCalls}`);
-          console.log(`ECC_WRAPPED_HTTP=${r.status}`);
-          console.log(`ECC_WRAPPED_OK=${d.ok === true}`);
-          console.log(`ECC_ANALYSIS_PRESENT=${!!d.analysis}`);
-          console.log(`ECC_FALLBACK=${d.audit?.eccFallback === true}`);
-          console.log(`ECC_USAGE_UNITS=${Number.isFinite(+d.audit?.usageUnits) ? +d.audit.usageUnits : 'unknown'}`);
-          console.log(`ECC_SOURCE_MODE=${d.analysis?.source_mode || 'real_ai'}`);
-          if (realAiCalls !== 1) throw new Error(`expected_exactly_one_real_ai_call_got_${realAiCalls}`);
-          if (!r.ok || d.ok !== true || !d.analysis) throw new Error(`ecc_user_path_failed_${r.status}`);
-          if (d.audit?.eccFallback === true && +d.audit?.usageUnits !== 0) throw new Error('ecc_fallback_usage_must_be_zero');
-          console.log('ONE REAL ECC AI CHECK: PASS');
+            const r = await context.window.fetch(`${base}/api/intelligence`, {
+              method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload), cache:'no-store'
+            });
+            const d = await r.json();
+            console.log(`REAL_AI_CALLS=${realAiCalls}`);
+            console.log(`ECC_WRAPPED_HTTP=${r.status}`);
+            console.log(`ECC_WRAPPED_OK=${d.ok === true}`);
+            console.log(`ECC_ANALYSIS_PRESENT=${!!d.analysis}`);
+            console.log(`ECC_FALLBACK=${d.audit?.eccFallback === true}`);
+            console.log(`ECC_USAGE_UNITS=${Number.isFinite(+d.audit?.usageUnits) ? +d.audit.usageUnits : 'unknown'}`);
+            console.log(`ECC_SOURCE_MODE=${d.analysis?.source_mode || 'real_ai'}`);
+            if (realAiCalls !== 1) throw new Error(`expected_exactly_one_real_ai_call_got_${realAiCalls}`);
+            if (!r.ok || d.ok !== true || !d.analysis) throw new Error(`ecc_user_path_failed_${r.status}`);
+            if (d.audit?.eccFallback === true && +d.audit?.usageUnits !== 0) throw new Error('ecc_fallback_usage_must_be_zero');
+            console.log('ONE REAL ECC AI CHECK: PASS');
+          })().catch(err=>{ console.error(err); process.exit(1); });
           NODE
