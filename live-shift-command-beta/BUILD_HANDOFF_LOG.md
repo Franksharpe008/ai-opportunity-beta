@@ -44,22 +44,35 @@ Direct post-deploy verification: mobile root 200; `/style.css` 200 `text/css`; `
 GitHub run `33851009681` nevertheless ended red because the smoke step used `curl | grep -q`. Once grep found the expected marker it closed the pipe, causing curl exit 23. This was a false-negative test, not a failed deployment. Workflow repair downloads each asset to a temp file first and then greps the file.
 
 ## 2026-09-04 — Shift Verification Queue designed for bad shifts, bad days and offline catch-up
-User clarified that hourly verification cannot assume somebody has time every hour. A supervisor/team lead may miss several hours or effectively the whole shift because of production issues, staffing, maintenance, or connectivity.
+User clarified that hourly verification cannot assume somebody has time every hour. A supervisor/team lead may miss several hours or effectively the whole shift because of production issues, staffing, maintenance, or connectivity. Applies to every plant shift/day, not only Third Shift.
+
+Feature commit: `265f15bf1525d872fb37216ad9f2814103a68500`.
+Acceptance run `33852272825`: SUCCESS.
+Handoff Guard run `33852272921`: SUCCESS.
 
 New module: `continuation-v10/lsc-v10-verification-queue.js`.
 
 Behavior:
-- Starts at `2026-09-04T04:00:00.000Z` (current V10 pilot Third Shift) so pre-feature legacy shifts do not become false backlog.
-- Every completed shift hour from that point forward remains in a Shift Verification Queue until verified.
-- Applies across First, Second and Third Shift; this is not a night-shift-only feature.
-- Queue identity is `shift id + hour index`; catch-up can survive current-shift rollover while the shift remains in shared history.
-- Oldest-first rapid entry: Good / Scrap / Rework / note → `SAVE + NEXT`.
-- Uses existing `production[]`, adds shift-hour `hourVerification[]` records and audit; no duplicate production backend.
+- Starts at `2026-09-04T04:00:00.000Z` so pre-feature legacy shifts do not become false backlog.
+- Every completed shift hour remains in a Shift Verification Queue until verified.
+- Queue identity is `shift id + hour index`; catch-up survives shift rollover while the shift remains in shared history.
+- Oldest-first Good / Scrap / Rework / note → `SAVE + NEXT`.
+- Uses existing `production[]`, adds shift-hour `hourVerification[]` and audit; no duplicate production backend.
 - Missing stays missing, never zero.
-- Verification freshness is based on `verifiedAt >= updatedAt`; if somebody edits an already verified hour later, it automatically becomes `REVERIFY` without destructive rewriting.
-- Offline entries are held in `lsc-v10-verification-outbox-v1` as `PENDING SYNC`. They do not appear to management as verified until server sync succeeds.
-- Online restore flushes the outbox to the original shift/hour, preserving human verification time and later sync time.
-- Manager Live Now gets a small verification completeness indicator from shared state.
-- AI World exposes per-hour verification trust and queue summary only on intentional AI requests. Queue operations themselves make zero model calls.
+- `verifiedAt >= updatedAt` is required for fresh verification; later edits automatically become `REVERIFY`.
+- Offline entries are stored in `lsc-v10-verification-outbox-v1` as `PENDING SYNC` and are not shown to management as verified until server sync succeeds.
+- Online recovery flushes to the original shift/hour with human verification time plus sync time.
+- Manager Live Now gets verification completeness.
+- AI World gets verification trust/context only when somebody intentionally asks AI. Queue operations make zero model calls.
 
-New acceptance contract: `tests/v10-verification-queue-contract.js`. Deployment contract and release builder are updated to load the module on manager and mobile. The production smoke test false-negative pipe pattern is removed.
+## 2026-09-04 — First verification-queue promotion stopped safely before deployment
+Deployment marker commit: `03310f94b91e87f380f6962658a76d1674faf427`.
+Production workflow run: `33852395169`.
+
+Acceptance passed, but `prepare-inplace-production.mjs` failed before Vercel CLI/auth/deployment because it still tried to harvest base V9 files from the retired `/api/base?file=...` route. Exact failure: `https://live-shift-command-v74.vercel.app/api/base?file=app1.js -> 404`.
+
+All Vercel deployment steps were skipped. Healthy production remained unchanged at manager `dpl_9ygz671ciZGXTfoDh6go9r7My77f` and mobile `dpl_DDgcJomaSKVfi7tAF6apJsVJgLQg`.
+
+Corrective action: `prepare-inplace-production.mjs` now harvests the exact current V9 browser shell from normal static production paths (`/${name}`), which is the topology created by the Safari repair. Direct verification confirmed manager `/app1.js` and `/manager-intelligence.js` return HTTP 200. State/archive/intelligence proxy topology is not changed.
+
+Deployment contract now explicitly requires direct static-path harvesting and rejects `/api/base?file=` harvesting so this cannot silently regress.

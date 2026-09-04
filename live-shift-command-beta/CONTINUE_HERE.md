@@ -43,32 +43,46 @@ Deprecated V10 side projects are scaffolding only. Do not extend them.
 - AI World explicit-use only; zero background/hourly model calls
 
 # SAFARI / MOBILE RENDER INCIDENT — RESOLVED
-Frank opened the regular mobile URL in iPhone Safari and saw browser-default unstyled HTML. The fix is now production: exact V9 CSS/JS are materialized as normal static files in the same deployment instead of being browser-fetched through `/api/base`. Direct production verification returned mobile root 200, `/style.css` 200 `text/css`, V9 JS 200 `application/javascript`, state 200 revision 99, archive 200, intelligence expected GET 405.
+Frank opened the regular mobile URL in iPhone Safari and saw browser-default unstyled HTML. The fix is production: exact V9 CSS/JS are normal static files in the same deployment rather than browser-fetched through `/api/base`. Direct production verification returned mobile root 200, `/style.css` 200 `text/css`, V9 JS 200 JavaScript, state 200 revision 99, archive 200, intelligence expected GET 405.
 
-GitHub run `33851009681` displayed failure only because its final smoke test used `curl | grep -q`; `grep` exited after finding the expected text and caused curl exit 23. Manager and mobile deployment steps had already succeeded. Treat this as a **false smoke-test failure**, not an application failure. The workflow is being corrected to download files first and grep the files afterward.
+The old `curl | grep -q` smoke pattern could falsely report curl exit 23 after a successful match. Production workflow now downloads files first and greps the downloaded file.
 
-# SHIFT VERIFICATION QUEUE — NEXT V10 EVOLUTION
-The old `VERIFY LAST HOUR` mental model is retired for the main floor workflow. Real operations may be too busy for one-hour punctual entry, an entire shift can be chaotic, and connectivity can fail.
+# SHIFT VERIFICATION QUEUE — ACCEPTED, NOT YET PROMOTED
+The old `VERIFY LAST HOUR` mental model is retired for the main floor workflow. Real operations may be too busy for one-hour punctual entry, an entire shift/day can be chaotic, and connectivity can fail.
 
-Required behavior from the V10 pilot shift forward:
+Feature commit: `265f15bf1525d872fb37216ad9f2814103a68500`.
+Acceptance run `33852272825`: SUCCESS.
+Handoff Guard run `33852272921`: SUCCESS.
+
+Required/implemented behavior from the V10 pilot shift forward:
 - every completed production hour remains recoverable until verified;
 - applies to First, Second, Third, overtime/rough days — not just nights;
-- queue follows `shift id + original hour`, not whoever happens to be active later;
-- catch-up can occur hours later or after closeout while the shift still exists in shared history;
-- rapid oldest-first `Good / Scrap / Rework → SAVE + NEXT` flow;
+- queue follows `shift id + original hour`;
+- catch-up can occur hours later or after closeout while the shift remains in shared history;
+- rapid oldest-first `Good / Scrap / Rework / note → SAVE + NEXT`;
 - missing remains missing and is never converted to zero;
 - entered-but-not-verified and verified are distinct states;
-- if a verified hour is later edited, verification is considered stale when `updatedAt > verifiedAt` and the hour returns as `REVERIFY`;
-- mobile offline outbox stores catch-up entries locally as `PENDING SYNC`; manager must not see them as verified until shared-state sync succeeds;
-- when connection returns, outbox sync writes the original shift/hour plus the human verification time and a later sync timestamp;
+- if a verified hour is edited later, `updatedAt > verifiedAt` makes it `REVERIFY`;
+- mobile offline outbox `lsc-v10-verification-outbox-v1` stores catch-up entries as `PENDING SYNC`;
+- manager does not see local offline entries as verified until shared-state sync succeeds;
+- connection recovery syncs the original shift/hour plus human verification time and later sync time;
 - same shared `production[]`, `hourVerification[]`, audit and archive lifecycle — no second production backend;
 - zero AI calls for queueing, math, saving or syncing;
-- AI World receives verification trust/status only on an intentional AI request so Copilot can distinguish verified, unverified and stale hours.
+- AI World gets verification trust/status only on intentional AI requests;
+- manager Live Now gets a small verification-completeness indicator.
 
-Migration cutoff: `2026-09-04T04:00:00.000Z` (start of the active V10 pilot Third Shift). Do not turn older pre-feature legacy shifts into false verification backlog.
+Migration cutoff: `2026-09-04T04:00:00.000Z` (start of active V10 pilot Third Shift). Do not turn older legacy shifts into false backlog.
 
-Implementation module: `continuation-v10/lsc-v10-verification-queue.js`.
-It also adds a small manager Live Now verification indicator from shared state.
+Module: `continuation-v10/lsc-v10-verification-queue.js`.
+
+# SAFE-STOP DURING FIRST QUEUE PROMOTION
+Deployment marker commit `03310f94b91e87f380f6962658a76d1674faf427` started production run `33852395169`.
+
+Result: **SAFE FAILURE BEFORE VERCEL AUTH/DEPLOY**. Acceptance passed, but `prepare-inplace-production.mjs` tried to harvest V9 files from the retired `/api/base?file=...` route and received `404` on manager `app1.js`. Vercel CLI install/auth/deploy steps were skipped. Therefore the healthy production deployments above were **not changed**.
+
+Builder correction: harvest exact current V9 browser shell assets from the normal static production paths (`/app1.js`, `/style.css`, `/manager-intelligence.js`, etc.), not `/api/base`. Direct checks confirmed manager `/app1.js` and `/manager-intelligence.js` return 200. Backend topology remains unchanged: manager state/archive/intelligence still proxy to protected preserved V9 authority; mobile still uses live manager authority.
+
+Deployment contract must assert the builder uses `${live}/${encodeURIComponent(name)}` and never restores `/api/base?file=` harvesting.
 
 # ARCHITECTURE TO PRESERVE
 One shared brain:
@@ -90,7 +104,7 @@ Mobile Actual / Good is tappable. It opens the Hourly Performance sheet with Goo
 # SAFE DEPLOYMENT PATH
 Use only `.github/workflows/live-shift-v10-production.yml` with `continuation-v10/tools/prepare-inplace-production.mjs`.
 
-Sequence: acceptance → build exact existing-project payload → live Vercel approval if needed → manager existing project → verify authority → mobile existing project → smoke regular URLs/shared revision/archive/intelligence/static asset delivery → update both handoffs with new deployment IDs.
+Sequence: acceptance → build exact existing-project payload from current static production shell → live Vercel approval if needed → manager existing project → verify authority → mobile existing project → smoke regular URLs/shared revision/archive/intelligence/static asset delivery → update both handoffs with new deployment IDs.
 
 # PLANT TRUTH
 Timezone `America/Chicago`; operating day `07:00 → 06:59:59`.
@@ -99,7 +113,7 @@ Opal Assembly detached Day 07:00–15:40; Night 19:00–03:40.
 Truth model: `Calendar Day → Plant Shift → Process Run → Hour → Production + Downtime + Quality + Response + Evidence + Verification`.
 
 # NEXT STEP
-Run acceptance and promote the Shift Verification Queue through the same existing manager/mobile projects. Then prove with real plant data only: missed completed hours → rapid catch-up → shared manager view → optional offline pending/sync → End Shift archive → Calendar Memory.
+Commit the corrected static-shell harvest builder + deployment contract + both handoffs. Run acceptance. Then trigger a fresh `[deploy-v10-production]` promotion of the Shift Verification Queue and stay live through Vercel approval. After deployment, verify regular manager/mobile URLs and update handoffs with final deployment IDs and shared revision.
 
 # NON-NEGOTIABLES
 Same projects/URLs. No fake data. No null→zero. No double-counted quality. Manager goal authoritative. AI explicit-use only. No duplicate providers/state/archive/config. Preserve rollbacks. Shift Roster untouched. Verify regular URLs after every deployment. Update both handoff files after every meaningful modification. Handle approvals live and keep checking until they clear.
