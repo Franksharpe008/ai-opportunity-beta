@@ -1,0 +1,57 @@
+name: Live Shift Handoff Guard
+
+on:
+  pull_request:
+    paths:
+      - 'live-shift-command-beta/**'
+      - '.github/workflows/live-shift-*.yml'
+  push:
+    branches:
+      - live-shift-command-v10-recovery
+    paths:
+      - 'live-shift-command-beta/**'
+      - '.github/workflows/live-shift-*.yml'
+
+jobs:
+  require-handoff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check handoff continuity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            BASE="origin/${{ github.base_ref }}"
+            HEAD="HEAD"
+          else
+            BASE="HEAD^"
+            HEAD="HEAD"
+          fi
+
+          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
+          echo "$CHANGED"
+
+          MEANINGFUL="$(echo "$CHANGED" | grep -E '^(live-shift-command-beta/.*\.(js|mjs|css|html|json)|live-shift-command-beta/api/|live-shift-command-beta/continuation-v10/|live-shift-command-beta/tools/|\.github/workflows/live-shift-.*\.yml$)' || true)"
+
+          if [[ -z "$MEANINGFUL" ]]; then
+            echo "No meaningful Live Shift Command modification detected."
+            exit 0
+          fi
+
+          if ! echo "$CHANGED" | grep -qx 'live-shift-command-beta/CONTINUE_HERE.md'; then
+            echo "ERROR: Live Shift Command changed without updating CONTINUE_HERE.md"
+            exit 1
+          fi
+
+          if ! echo "$CHANGED" | grep -qx 'live-shift-command-beta/BUILD_HANDOFF_LOG.md'; then
+            echo "ERROR: Live Shift Command changed without appending BUILD_HANDOFF_LOG.md"
+            exit 1
+          fi
+
+          echo "Handoff continuity satisfied."
