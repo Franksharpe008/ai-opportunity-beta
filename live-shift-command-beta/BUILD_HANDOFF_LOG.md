@@ -38,7 +38,7 @@ Operator statement used in the failed closeout: `They reset the vision system an
 
 Repair commit `71ff4f2cb049c8eb8aad3a52c19e127f85e09bac` adds:
 - `lsc-v10-resolution-guard.js`: existing intentional `enrich` call remains primary; on 422/network/invalid structured output, no second model call is made. A source-grounded fallback converts only operator words into the existing V8 confirmation shape. For the regression statement: reset vision system = action, four-part rerun = verification evidence, midnight = recurrence signal, root cause not established, no false permanent-fix claim.
-- `lsc-v10-verification-ui.js`: mobile CTA only appears for real backlog/pending sync; labels are `1 HOUR NEEDS VERIFICATION` / `N HOURS NEED VERIFICATION`; button hides when clear; MutationObserver prevents legacy `VERIFY LAST HOUR` rerender bounce.
+- `lsc-v10-verification-ui.js`: mobile CTA only appears for real backlog/pending sync; labels are `1 HOUR NEEDS VERIFICATION` / `N HOURS NEED VERIFICATION`; button hides when clear.
 - release builder wiring and exact regression tests.
 
 Validation on `71ff4f2cb049c8eb8aad3a52c19e127f85e09bac`:
@@ -46,9 +46,34 @@ Validation on `71ff4f2cb049c8eb8aad3a52c19e127f85e09bac`:
 - V10 Acceptance PR `33855412983`: SUCCESS
 - Handoff Guard push `33855407861`: SUCCESS
 - Handoff Guard PR `33855412962`: SUCCESS
-- Production workflow skipped intentionally because no deploy marker was present.
 
-## 2026-09-04 — Production smoke contract hardened for closeout repair
-Before promotion, production smoke was extended so a green release must prove the regular surfaces actually load the new modules. Required checks now include manager/mobile `lsc-v10-resolution-guard.js`, mobile `lsc-v10-verification-ui.js`, direct fetch of those files and behavior markers, plus all previous static asset/state/archive/intelligence/shared-revision checks.
+## 2026-09-04 — Resolution closeout + verification guard production
+Promotion marker `39085568b63b96cf215407d570d19676c8b4c27a`, production run `33855942209`, rerun job `100977915662`: SUCCESS after live Vercel approval.
 
-Next: validate this smoke-contract commit, then create a separate `[deploy-v10-production]` release marker and stay live through Vercel approval. Do not call the RB10 closeout production-fixed until manager + mobile deployment and final smoke pass.
+Production proof:
+- Manager `dpl_GjQVF6dPZCAksy4gBED5tAej3uxd`
+- Mobile `dpl_AVy8Pt7UVk1oeUM5NAXq8DBEsjem`
+- Shared revision `110`
+- manager/mobile state and archive healthy
+- POST-only intelligence preserved
+- browser assets static
+- `lsc-v10-resolution-guard.js` loaded manager + mobile
+- `lsc-v10-verification-ui.js` loaded mobile
+- final smoke: `SAFE V10 PROMOTION VERIFIED · shared revision 110 · browser assets static · verification queue + resolution guard loaded`
+
+## 2026-09-04 — Premium verification CTA flicker root cause and repair
+After the successful closeout deployment, Frank observed the mobile verification CTA still visibly alternating every few seconds between legacy `VERIFY LAST HOUR` and the correct backlog count (for example `5 HOURS NEED VERIFICATION`). This was not a queue calculation bug.
+
+Root cause: `lsc-v10-mobile.js` rebuilt `#v10mVerifyHour` every 4 seconds with legacy last-hour wording; `lsc-v10-verification-ui.js` then corrected it via MutationObserver. The observer therefore repaired the label after a legacy frame had already been painted, creating visible flicker.
+
+Staged repair:
+- source commit `9d45dc82fb2299291c706f02e41a18c08805e27d` upgrades mobile integration to `lsc-v10-mobile-1.3.1`;
+- mobile renderer now creates the verification slot hidden, empty and `aria-hidden=true` before paint;
+- legacy `VERIFY LAST HOUR` / `LAST HOUR VERIFIED` strings are removed from the mobile renderer entirely;
+- V10 verification UI becomes the sole owner of CTA visibility, label and click behavior;
+- `renderInline()` synchronously calls `LSC_V10_VERIFICATION_UI.sync()` after rebuild;
+- test commit `a5f05bad9173d9a474a65a2ede28ac1dd465688c` now fails if legacy last-hour wording returns to either module or if the slot is not hidden-before-paint.
+
+Canonical handoff updated in `5421db5e2f4bf690183302157a6eb651249f20e2`.
+
+Next: run V10 Acceptance + Handoff Guard on current branch head. If green, promote through the existing in-place production workflow only, handle Vercel approval live, verify regular URLs, and append final deployment IDs. Do not claim production flicker fixed before that smoke pass.
