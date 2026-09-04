@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const mobile=!!document.querySelector('[data-action="start-stop"]');if(!mobile)return;
 const C=window.LSC_V10_CORE;if(!C)return console.warn('[LSC V10 Mobile] core missing');
-const V='lsc-v10-mobile-1.4.0',AREA_KEY='lsc-v10-mobile-area';
+const V='lsc-v10-mobile-1.4.1',AREA_KEY='lsc-v10-mobile-area';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const cur=()=>state?.current||null;const areaList=()=>state?.config?.areas||window.AREAS||[];const managerGoal=()=>Math.max(0,+state?.config?.shiftGoal||400);let presenceBusy=false,lastPresenceKey='';
 function selectedArea(){let a='';try{a=localStorage.getItem(AREA_KEY)||''}catch{}if(!areaList().includes(a))a=areaList()[0]||'';return a}
@@ -28,5 +28,6 @@ function detailProcessHtml(){const rows=[...(cur()?.processProduction||[])].sort
 function injectDetail(){const host=document.getElementById('modalBody');if(!host||host.querySelector('.v10m-detail'))return;const html=detailProcessHtml();if(!html)return;const timeline=host.querySelector('.timeline');if(timeline)timeline.insertAdjacentHTML('beforebegin',html);else host.insertAdjacentHTML('beforeend',html)}
 if(typeof detail==='function'){const nativeDetail=detail;detail=function(){nativeDetail();setTimeout(injectDetail,0)}}const nativeRender=typeof render==='function'?render:null;if(nativeRender){render=function(){nativeRender();renderInline()}}
 function reconnect(){try{if(typeof pull==='function')pull()}catch(e){console.warn('[LSC V10 Mobile] reconnect pull isolated',e?.message||e)}}window.addEventListener('online',reconnect);window.addEventListener('pageshow',reconnect);window.LSC_V10_OPEN_PROCESS_ACTUAL=openActual;lockManagerControls();installInline();setInterval(renderInline,4000);
-console.info(`[LSC] ${V} active · selected line becomes shared floor presence only after active shift selection · manager LIVE signal stays truthful`);
+// shared-state render ECC: V10 inline/verification failures remain isolated from successful shared-state pull status.
+console.info(`[LSC] ${V} active · shared-state render ECC · selected line becomes shared floor presence only after active shift selection · manager LIVE signal stays truthful`);
 })();
