@@ -42,34 +42,48 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          FORCE_COLOR: '0'
+          NO_COLOR: '1'
+          CI: '1'
         run: |
           if [ -n "$VERCEL_TOKEN" ]; then
             echo "Using stored Vercel deployment token."
           else
-            echo "No stored token. Starting Vercel secure device approval."
-            rm -f /tmp/vercel-login.log /tmp/vercel-login-clean.log
-            timeout 600s script -q -e -c "vercel login --no-color" /tmp/vercel-login.log &
+            echo "Starting Vercel secure device approval."
+            rm -f /tmp/vercel-login.log /tmp/vercel-comment.md
+            stdbuf -oL -eL vercel login --no-color > /tmp/vercel-login.log 2>&1 &
             LOGIN_PID=$!
-            for i in $(seq 1 45); do
+            FOUND=0
+            for i in $(seq 1 60); do
               sleep 1
               if [ -s /tmp/vercel-login.log ]; then
-                sed -r 's/\x1B\[[0-9;]*[mGKHF]//g' /tmp/vercel-login.log | tr -d '\r' > /tmp/vercel-login-clean.log || true
-                if grep -Eq 'https://[^ ]*vercel[^ ]*|vercel\.com/[A-Za-z0-9_/?=&.-]+' /tmp/vercel-login-clean.log; then
+                cat /tmp/vercel-login.log
+                if grep -Eqi 'visit|verify|device|https://|vercel\.com' /tmp/vercel-login.log; then
+                  FOUND=1
                   break
                 fi
               fi
+              if ! kill -0 "$LOGIN_PID" 2>/dev/null; then
+                break
+              fi
             done
-            LOGIN_TEXT=$(tail -20 /tmp/vercel-login-clean.log 2>/dev/null || true)
+            LOGIN_TEXT=$(tail -40 /tmp/vercel-login.log 2>/dev/null || true)
             {
               echo '### Vercel approval required'
-              echo 'Approve this secure Vercel device login so the already-tested V10 release can continue directly into the existing manager/mobile projects.'
+              echo 'This approval authorizes the already-tested V10 release to deploy directly into the existing Live Shift Command manager/mobile projects.'
               echo
               echo '```text'
               echo "$LOGIN_TEXT"
               echo '```'
             } > /tmp/vercel-comment.md
             gh pr comment 1 --body-file /tmp/vercel-comment.md
-            wait $LOGIN_PID
+            if [ "$FOUND" -ne 1 ]; then
+              echo "Vercel approval URL was not detected."
+              cat /tmp/vercel-login.log || true
+              kill "$LOGIN_PID" 2>/dev/null || true
+              exit 1
+            fi
+            wait "$LOGIN_PID"
           fi
       - name: Deploy mobile to existing project
         shell: bash
