@@ -13,6 +13,8 @@ A modification is **not complete** until the handoff is updated.
 
 This protocol exists specifically to prevent future chats from losing architectural context and accidentally rebuilding, replacing, or bypassing working systems.
 
+The repo also contains `.github/workflows/live-shift-handoff-guard.yml`, which is intended to fail meaningful Live Shift Command changes when the two handoff files are not updated in the same change set. Continuity should not depend on chat memory alone.
+
 ---
 
 # CURRENT PRODUCT TRUTH — 2026-09-04
@@ -329,7 +331,15 @@ Last known green acceptance before production recovery:
 - run `#85`
 - commit `2c2fe26eb821066c40b64548a2e060b7070b342b`
 
-Every meaningful code change should rerun this suite before production promotion when the changed files are covered by the workflow.
+Continuity enforcement workflow:
+`Live Shift Handoff Guard`
+
+File:
+`.github/workflows/live-shift-handoff-guard.yml`
+
+It requires meaningful Live Shift Command modifications to update both canonical handoff files in the same change set.
+
+Every meaningful code change should rerun the acceptance suite before production promotion when the changed files are covered by the workflow.
 
 ---
 
