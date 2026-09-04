@@ -22,11 +22,13 @@ V10 is additive to the recovered V8/V9 manager build. When integrating into a re
 ```html
 <link rel="stylesheet" href="/lsc-command-v10.css">
 <link rel="stylesheet" href="/lsc-v10-capacity.css">
+<link rel="stylesheet" href="/lsc-v10-brief.css">
 
 <script src="/lsc-v10-core.js"></script>
 <script src="/lsc-v10-ui.js"></script>
 <script src="/lsc-v10-capacity.js"></script>
 <script src="/lsc-v10-capacity-ui.js"></script>
+<script src="/lsc-v10-brief.js"></script>
 ```
 
 Required ordering:
@@ -40,6 +42,7 @@ Required ordering:
 7. `lsc-v10-ui.js`
 8. `lsc-v10-capacity.js`
 9. `lsc-v10-capacity-ui.js`
+10. `lsc-v10-brief.js`
 
 The old monolithic V10 prototype was removed after the safer modular rewrite.
 
@@ -101,6 +104,22 @@ Loss decomposition remains deterministic and evidence-linked:
 - weak-shift identification
 - incident / action / verification drill-through
 
+## V10 operating brief contract
+
+The V10 Operating Brief is deterministic. It composes the existing manager evidence, V10 process-run/hourly evidence and the V10 rate/capacity decision into this fixed management structure:
+
+1. STATUS
+2. WHAT HAPPENED
+3. WHAT CHANGED
+4. WHAT REPEATED
+5. WHAT WORKED
+6. OPPORTUNITY
+7. RESPONSE
+8. MANAGEMENT ATTENTION
+9. PROOF
+
+The brief must explicitly surface evidence gaps. Missing current Actual must be described as missing and must never appear as zero. A `HOLD / BUILDING` capacity result must tell management to close production evidence gaps before judging capacity. A `TRIAL HIGHER RATE` result remains advisory and cannot modify configuration.
+
 ## Current real-data behavior at recovery
 
 The recovered archive does **not** currently contain enough trustworthy cross-shift production evidence to justify a rate increase.
@@ -121,6 +140,7 @@ Run from `live-shift-command-beta/continuation-v10`:
 ```bash
 node tests/v10-core-acceptance.js
 node tests/v10-capacity-acceptance.js
+node tests/v10-brief-acceptance.js
 ```
 
 Core acceptance verifies:
@@ -143,6 +163,13 @@ Capacity acceptance verifies:
 - null production does not qualify
 - untouched default zero rows do not qualify
 
+Brief acceptance verifies:
+
+- all nine management sections are present and ordered correctly
+- `HOLD / BUILDING` is carried into Opportunity
+- missing Actual appears in Management Attention and Proof
+- process-run evidence appears in What Happened
+
 ## Production safety gate
 
 Do not replace the current production deployment until all of the following are true:
@@ -150,7 +177,8 @@ Do not replace the current production deployment until all of the following are 
 - V10 core syntax passes
 - V10 UI syntax passes
 - V10 capacity engine/UI syntax passes
-- both acceptance tests pass
+- V10 brief syntax passes
+- all V10 acceptance tests pass
 - recovered V8/V9 assets are present in the deployment workspace
 - manager page boots with no console exception
 - V9 Live Now still renders
@@ -159,6 +187,7 @@ Do not replace the current production deployment until all of the following are 
 - Process Actual can be saved without changing shift Actual
 - existing Scrap/Rework workflow still behaves unchanged
 - Rate Opportunity renders `HOLD / BUILDING` on the current sparse archive rather than inventing capacity
+- V10 Operating Brief reflects the same capacity decision and evidence gaps
 - rate/capacity decisions never write to `config.mesRate` or `shiftGoal`
 - Shift Roster repository remains untouched
 
