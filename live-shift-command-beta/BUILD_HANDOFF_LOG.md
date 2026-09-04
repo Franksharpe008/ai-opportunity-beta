@@ -76,4 +76,14 @@ Staged repair:
 
 Canonical handoff updated in `5421db5e2f4bf690183302157a6eb651249f20e2`.
 
-Next: run V10 Acceptance + Handoff Guard on current branch head. If green, promote through the existing in-place production workflow only, handle Vercel approval live, verify regular URLs, and append final deployment IDs. Do not claim production flicker fixed before that smoke pass.
+Initial full Acceptance on branch head caught one **outdated test contract**, not a runtime defect: `tests/v10-integration-contract.js` still required `VERIFY LAST HOUR` to exist. The new dedicated verification UI contract passed. Handoff Guard also passed.
+
+Correction commit `44675694b433f3c8957a24e4fc37fc6c07f07460` updates the integration contract to require the premium design instead:
+- no `VERIFY LAST HOUR`;
+- no `LAST HOUR VERIFIED`;
+- hidden-before-paint queue slot;
+- synchronous `LSC_V10_VERIFICATION_UI.sync()` ownership.
+
+Canonical handoff updated again in `877426c8fb9e70275d835e810453f34a4366bdaa`.
+
+Next: rerun V10 Acceptance + Handoff Guard on the new branch head. If green, promote through the existing in-place production workflow only, handle Vercel approval live, verify regular URLs, and append final deployment IDs. Do not claim production flicker fixed before that smoke pass.
