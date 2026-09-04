@@ -13,7 +13,7 @@ Never deploy stale `main` over the live CLI/prebuilt apps.
 
 ## Live / beta surfaces
 
-### Existing manager production
+### Existing manager production / rollback point
 - `https://live-shift-command-v74.vercel.app`
 - project `live-shift-command-v74`
 - V9 functional baseline
@@ -21,17 +21,26 @@ Never deploy stale `main` over the live CLI/prebuilt apps.
 ### Existing mobile production / rollback point
 - `https://live-shift-command-v741-mobile.vercel.app`
 - project `live-shift-command-v741-mobile`
-- current V9 functional baseline
+- V9 functional baseline
 
 ### V10 mobile beta — LIVE
 - `https://live-shift-command-v10-mobile-beta.vercel.app`
 - project `live-shift-command-v10-mobile-beta`
 - first deployment `dpl_Eeda7oAZGMRFWou2Qrz1fgA8vfFn`
-- uses the exact existing mobile V8/V9 assets plus the recovery-branch V10 modules
-- server-side proxies `/api/state`, `/api/archive`, `/api/intelligence` to the existing shared production services
-- therefore this beta reads/writes the real shared plant state; it is not a mock
-- original mobile production URL remains untouched as rollback
-- smoke verified: deployment READY, root 200, state proxy 200, V10 floor-ops asset 200 JS, no Vercel runtime errors
+- exact existing mobile V8/V9 assets + recovery-branch V10 modules
+- server-side proxies `/api/state`, `/api/archive`, `/api/intelligence` to existing shared services
+- reads/writes real shared plant state; not a mock
+- smoke verified: READY, root 200, state proxy 200, V10 floor-ops asset 200 JS, no Vercel runtime errors
+
+### V10 manager beta — LIVE
+- `https://live-shift-command-v10-manager-beta.vercel.app`
+- project `live-shift-command-v10-manager-beta`
+- first deployment `dpl_42aMBsxieiSuGg7ABYCe1P25fX9J`
+- exact existing manager V8/V9 assets + recovery-branch V10 manager modules
+- proxies the same shared `/api/state`, `/api/archive`, `/api/intelligence`
+- smoke verified: READY, root 200, state proxy 200 at same revision, no Vercel runtime errors
+
+The two V10 betas are deliberately separate from the old production URLs so production remains an immediate rollback point.
 
 ## Shared plant truth
 
@@ -75,9 +84,9 @@ A process run may cross a plant-shift boundary. The run remains continuous while
 Supplemental process/run/hour evidence. Generic shift Actual is never redistributed into it. Missing Actual remains missing. Same process/run/hour is upserted with correction history instead of double-counted.
 
 ### Time Truth
-New floor layer: `continuation-v10/lsc-v10-floor-ops.js`
+Floor layer: `continuation-v10/lsc-v10-floor-ops.js`
 
-Downtime now supports actual-vs-recorded time:
+Downtime supports:
 - Started Now
 - Started Earlier
 - Correct Start Time
@@ -91,25 +100,25 @@ Stored/audited fields include as applicable:
 - `closedRecordedAt`
 - `timeSource.start/end`
 - `retroactive.start/end`
-- process-run / plant-shift / schedule context based on the actual event time
+- process-run / plant-shift / schedule context based on actual event time
 
-The event duration is based on actual equipment stop/restoration time, not when the supervisor happened to open the app.
+Event duration is based on actual equipment stop/restoration time, not when the supervisor opened the app.
 
 ### Change attribution
-Do not clutter the floor UI with user identity yet.
+Do not clutter floor UI with user identity yet.
 
-Beta mutations write hidden audit metadata using plant shift as actor:
-- `First Shift`
-- `Second Shift`
-- `Third Shift`
+Beta mutations write hidden actor metadata using plant shift:
+- First Shift
+- Second Shift
+- Third Shift
 
 Shape:
 `{ mode:'shift_beta', shift:'Third Shift', actorId:'third_shift', userId:null }`
 
-Events/process records can carry `changedBy`, `changedAt`, `audit[]`; current shift carries hidden audit history. Later authenticated users can fill `userId` / person identity without changing historical schema.
+Events/process records can carry `changedBy`, `changedAt`, `audit[]`; current shift carries hidden audit history. Later authentication can populate person/user ID without replacing this schema.
 
 ### Hour Truth
-Mobile now has **VERIFY LAST HOUR** for the selected process.
+Mobile has **VERIFY LAST HOUR** for the selected process.
 
 Verified hourly record includes:
 - process/run/hour
@@ -118,9 +127,8 @@ Verified hourly record includes:
 - Scrap
 - Rework
 - linked downtime events overlapping that hour
-- `verified:true`
-- verification timestamp
-- shift-level beta actor
+- verified status/time
+- beta shift actor
 - correction history
 
 `current.hourVerification[]` is also written.
@@ -128,7 +136,7 @@ Verified hourly record includes:
 Hourly Scrap/Rework is production accounting evidence only. Existing quality events remain authoritative for defect/root-cause/containment intelligence so quality is not double-counted.
 
 ### Multi-line mobile navigation
-Mobile Process / Run card now lets the supervisor move among:
+Mobile Process / Run card lets the supervisor move among:
 - Opal Lamination
 - Opal Edge Wrap
 - Opal Assembly
@@ -136,31 +144,24 @@ Mobile Process / Run card now lets the supervisor move among:
 - E41
 - Injection Molding
 
-Selecting a line does **not** change plant shift. Each selected line shows its run identity, DOWN/RUN/DETACHED status, line downtime/manage action, Process Actual, Verify Last Hour, and AI Command.
+Selecting a line does **not** change plant shift. Each line shows run identity, DOWN/RUN/DETACHED status, line downtime/manage, Process Actual, Verify Last Hour, and AI Command.
 
 Detached Opal Assembly Night remains one continuous process run while Second/Third ownership is stamped by event/hour time.
 
 ### Manager-controlled Company Goal
-Mobile removes goal editing. Manager config is authoritative. The beta mobile KPI/start form displays `state.config.shiftGoal` even if an older active shift record contains a stale legacy shiftGoal. Historical raw shift values are not silently rewritten.
+Mobile removes goal editing. `state.config.shiftGoal` is authoritative on the mobile KPI and Start Shift form. Historical shift objects are not silently rewritten just for display.
+
+At the latest smoke check config Company Goal was `400`, while the already-active Third Shift record had a stale legacy `shiftGoal:265` from the old workflow. V10 displays 400 from manager config.
 
 ## Bounded AI operational control
 
-The prior rule “AI never directly changes production state” is superseded by this more precise contract:
+The old broad rule “AI never changes production state” is superseded by this precise contract:
 
-**AI may execute bounded operational evidence mutations only when an authorized supervisor gives an explicit instruction and the deterministic V10 command layer validates the mutation.**
+**AI may execute bounded operational evidence mutations when an authorized supervisor gives an explicit instruction and deterministic V10 validates the mutation.**
 
-AI interprets language. Deterministic code owns:
-- plant time conversion
-- operating day
-- plant shift
-- process run
-- schedule version
-- duration
-- record key/upsert behavior
-- audit attribution
-- validation
+AI interprets language. Deterministic code owns plant time, operating day, plant shift, process run, schedule version, duration, record key/upsert, audit attribution, and validation.
 
-Current executable commands include:
+Current executable commands:
 - record/backdate downtime
 - restore/backdate downtime end
 - verify completed process hour Good/Scrap/Rework
@@ -169,9 +170,9 @@ Examples:
 - “Wetline stopped at 1:17 and was back up at 1:46. RB08.”
 - “Wetline did 29 good last hour, one scrap and two rework.”
 
-If a downtime code is omitted, the existing `/api/intelligence` classify task is reused. Voice command uses the existing transcribe task. No second AI provider exists.
+If a downtime code is omitted, reuse existing `/api/intelligence` classify. Voice command reuses existing transcribe. No second AI provider.
 
-The UI shows the interpreted command before `EXECUTE VERIFIED COMMAND`.
+The UI shows the interpreted operation before `EXECUTE VERIFIED COMMAND`.
 
 AI still cannot autonomously change:
 - company goal/rate
@@ -182,7 +183,7 @@ AI still cannot autonomously change:
 
 ## Manager V10
 
-Manager additions already implemented on branch:
+Implemented on branch and loaded in manager beta:
 - Calendar Day Reconstruction
 - shift → process run → hour → evidence
 - process Actual
@@ -199,11 +200,9 @@ STATUS → WHAT HAPPENED → WHAT CHANGED → WHAT REPEATED → WHAT WORKED → 
 
 ## Current real data / capacity
 
-At last verified check the correct capacity state is `HOLD / BUILDING` because cross-shift trustworthy hourly Actual is still sparse. Untouched legacy zero rows and missing Actual are excluded.
+Correct capacity interpretation remains `HOLD / BUILDING` because trustworthy cross-shift hourly Actual is sparse. Untouched legacy zero rows and missing Actual are excluded.
 
-At the V10 mobile beta smoke check, shared state was revision `96`, schema still `live-shift-command/v7.9` because simply opening V10 does not migrate/write state. A confirmed V10 operational mutation performs the schema upgrade.
-
-Config Company Goal is `400`; the current Third Shift record was previously created with legacy `shiftGoal:265`. V10 mobile displays manager config 400 and does not rewrite historical raw records just for display.
+At both beta smoke checks shared state was revision `96`, schema still `live-shift-command/v7.9`. Merely opening V10 does not migrate/write state. A confirmed V10 mutation performs the schema upgrade.
 
 ## Tests / release safety
 
@@ -217,22 +216,22 @@ GitHub Actions `Live Shift V10 Acceptance` covers:
 - idempotent V10 release builder
 - guard against manager intelligence writing rate/goal
 
-Run #74 on head `c69d620f8fc4ff0115cd40606604719de34561d1` passed every step before the manager-goal display-only patch; rerun CI after any subsequent branch update.
+**Latest code run #76 passed on head `fe8fd90723667b7865dde6760813303e488a809a`.**
 
 ## Exact next step
 
-1. Re-run acceptance on latest head.
-2. Open V10 mobile beta on an actual phone and smoke the UI without fabricating plant data.
-3. Use a real event/hour when available to prove: retrofit start/end → shared state → hidden shift audit → manager reconstruction.
-4. Stand up manager V10 beta against the same shared APIs, keeping manager production untouched.
-5. Verify mobile Process Actual / verified hour appears in manager Day Reconstruction and capacity context.
-6. On a real completed V10 shift, prove `processProduction[]` and audit fields survive End Shift → permanent archive → Calendar reconstruction.
-7. Only then coordinate production promotion. Keep old mobile/manager deployments available for immediate rollback.
+1. Frank/Emilio smoke the V10 mobile beta on an actual phone without inventing plant data.
+2. Frank can inspect the manager beta simultaneously.
+3. On the next real downtime/hour, prove end-to-end: actual/retro time or verified hour → shared state V10 mutation → hidden shift audit → manager V10 reconstruction.
+4. Verify Process Actual / verified hour appears in manager Day Reconstruction and manager intelligence.
+5. On a real completed V10 shift, prove `processProduction[]`, `hourVerification[]`, and audit fields survive End Shift → permanent archive → Calendar reconstruction.
+6. Fix any real floor UX issues found by Frank/Emilio.
+7. Only then coordinate production promotion, keeping old manager/mobile deployments available for immediate rollback.
 
 ## Non-negotiables
 
 - No clean-slate rewrite.
-- No fake plant data just to make dashboards look populated.
+- No fake plant data to populate dashboards.
 - No silent null→zero.
 - No double-counted quality.
 - No duplicate downtime/AI/provider/config systems.
