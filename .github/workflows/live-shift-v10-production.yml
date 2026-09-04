@@ -109,6 +109,8 @@ jobs:
           grep -q 'lsc-v10-ai-reliability.js' /tmp/mobile.html
           grep -q 'lsc-v10-resolution-guard.js' /tmp/manager.html
           grep -q 'lsc-v10-resolution-guard.js' /tmp/mobile.html
+          grep -q 'lsc-v10-manager-warroom.js' /tmp/manager.html
+          grep -q 'lsc-v10-manager-live-floor.js' /tmp/manager.html
           grep -q 'lsc-v10-hourly-performance.js' /tmp/mobile.html
           grep -q 'lsc-v10-hourly-performance.css' /tmp/mobile.html
           grep -q 'lsc-v10-verification-queue.js' /tmp/manager.html
@@ -129,9 +131,11 @@ jobs:
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-ai-world.js >/tmp/manager-ai-world.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-ai-reliability.js >/tmp/manager-ai-reliability.js
           curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-resolution-guard.js >/tmp/manager-resolution-guard.js
+          curl --retry 5 --retry-all-errors -fsSL https://live-shift-command-v74.vercel.app/lsc-v10-manager-live-floor.js >/tmp/manager-live-floor.js
           grep -q ':root' /tmp/mobile-style.css
           grep -q 'Live Shift Command V9' /tmp/mobile-v9.js
-          grep -q 'lsc-v10-mobile-1.3.1' /tmp/mobile-v10.js
+          grep -q 'lsc-v10-mobile-1.3.2' /tmp/mobile-v10.js
+          grep -q 'view-only animated telemetry' /tmp/manager-live-floor.js
           ! grep -q 'VERIFY LAST HOUR' /tmp/mobile-v10.js
           ! grep -q 'LAST HOUR VERIFIED' /tmp/mobile-v10.js
           grep -q 'zero background AI' /tmp/mobile-hourly.js
@@ -152,5 +156,5 @@ jobs:
           test "$(curl -s -o /tmp/mo.json -w '%{http_code}' https://live-shift-command-v741-mobile.vercel.app/api/intelligence)" = '405'
           node - <<'NODE'
           const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/manager-state.json','utf8')),b=JSON.parse(fs.readFileSync('/tmp/mobile-state.json','utf8')),ma=JSON.parse(fs.readFileSync('/tmp/manager-archive.json','utf8')),mb=JSON.parse(fs.readFileSync('/tmp/mobile-archive.json','utf8'));
-          if(!a.state||!b.state)throw Error('shared state missing');if(a.revision!==b.revision)throw Error(`revision mismatch ${a.revision} vs ${b.revision}`);if(!ma.ok||!mb.ok)throw Error('archive unhealthy');console.log(`SAFE V10 PROMOTION VERIFIED · shared revision ${a.revision} · static assets · premium verification CTA + resolution guard + AI reliability loaded · no paid AI inference used by smoke`);
+          if(!a.state||!b.state)throw Error('shared state missing');if(a.revision!==b.revision)throw Error(`revision mismatch ${a.revision} vs ${b.revision}`);if(!ma.ok||!mb.ok)throw Error('archive unhealthy');console.log(`SAFE V10 PROMOTION VERIFIED · shared revision ${a.revision} · static assets · manager live-floor telemetry + premium verification CTA + resolution guard + AI reliability loaded · no paid AI inference used by smoke`);
           NODE
